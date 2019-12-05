@@ -1,4 +1,4 @@
-module github.com/carprks/authorizer
+module github.com/bugfixes/authorizer
 
 go 1.13
 

@@ -2,16 +2,17 @@ package validator_test
 
 import (
 	"fmt"
+	"os"
+	"testing"
+	"time"
+
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
-	"github.com/carprks/authorizer/auth/validator"
+	"github.com/bugfixes/authorizer/service/validator"
 	"github.com/joho/godotenv"
 	"github.com/stretchr/testify/assert"
-	"os"
-	"testing"
-	"time"
 )
 
 func injectKey(key string, expires time.Time, service string) error {

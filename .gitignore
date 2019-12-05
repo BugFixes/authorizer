@@ -214,5 +214,6 @@ Pods/
 
 # Build
 authorizer
+authorizer.zip
 outputtemplate.yml
 keys.json

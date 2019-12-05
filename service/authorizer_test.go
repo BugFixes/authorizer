@@ -1,19 +1,20 @@
-package auth_test
+package service_test
 
 import (
 	"context"
 	"fmt"
+	"os"
+	"testing"
+	"time"
+
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
-	"github.com/carprks/authorizer/auth"
+	"github.com/bugfixes/authorizer/service"
 	"github.com/joho/godotenv"
 	"github.com/stretchr/testify/assert"
-	"os"
-	"testing"
-	"time"
 )
 
 func injectKey(key string, expires time.Time, service string) error {
@@ -152,7 +153,7 @@ func TestHandler(t *testing.T) {
 			injectKey(test.inject.key, test.inject.expires, test.inject.service)
 
 			// do the test
-			resp, err := auth.Handler(context.Background(), test.request)
+			resp, err := service.Handler(context.Background(), test.request)
 			passed := assert.IsType(t, test.err, err)
 			if !passed {
 				t.Errorf("%s type failed: %w", test.name, err)
@@ -236,7 +237,7 @@ func BenchmarkHandler(b *testing.B) {
 		injectKey(test.inject.key, test.inject.expires, test.inject.service)
 
 		// do the test
-		resp, err := auth.Handler(context.Background(), test.request)
+		resp, err := service.Handler(context.Background(), test.request)
 		passed := assert.IsType(b, test.err, err)
 		if !passed {
 			fmt.Println(fmt.Sprintf("test: %v, expect: %v, resp: %v, err: %v", test.request, test.expect, resp, err))

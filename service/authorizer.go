@@ -1,13 +1,14 @@
-package auth
+package service
 
 import (
 	"context"
 	"fmt"
-	"github.com/aws/aws-lambda-go/events"
-	"github.com/carprks/authorizer/auth/policy"
-	"github.com/carprks/authorizer/auth/validator"
 	"os"
 	"strings"
+
+	"github.com/aws/aws-lambda-go/events"
+	"github.com/bugfixes/authorizer/service/policy"
+	"github.com/bugfixes/authorizer/service/validator"
 )
 
 // Handler process request

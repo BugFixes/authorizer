@@ -15,7 +15,7 @@ Parameters:
     Default: 'X-Authorization'
   AuthPrefix:
     Type: String
-    Default: 'carprk'
+    Default: 'bugfixes'
 
 Resources:
   Dynamo:

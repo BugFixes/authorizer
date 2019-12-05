@@ -2,12 +2,13 @@ package policy_test
 
 import (
 	"fmt"
-	"github.com/aws/aws-lambda-go/events"
-	"github.com/carprks/authorizer/auth/policy"
-	"github.com/joho/godotenv"
-	"github.com/stretchr/testify/assert"
 	"os"
 	"testing"
+
+	"github.com/aws/aws-lambda-go/events"
+	"github.com/bugfixes/authorizer/service/policy"
+	"github.com/joho/godotenv"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestGenerateAllow(t *testing.T) {

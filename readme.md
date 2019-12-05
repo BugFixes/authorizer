@@ -1,6 +1,6 @@
-# CarPark Authorizer 
+# BugFixes Authorizer 
 
-The authorizer for carpark api gateway
+The authorizer for bugfixes api gateway
 
 #### Build Status
-[![Build Status](https://travis-ci.org/carprks/authorizer.svg?branch=master)](https://travis-ci.org/carprks/authorizer)
+[![Build Status](https://travis-ci.org/bugfixes/authorizer.svg?branch=master)](https://travis-ci.org/bugfixes/authorizer)
