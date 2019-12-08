@@ -3,8 +3,15 @@
 STACK_NAME=authorizer
 BUILD_BUCKET=builds
 
-rm ${STACK_NAME}
-rm ${STACK_NAME}.zip
+removeFiles()
+{
+  if [[ -f "${STACK_NAME}.zip" ]]; then
+    rm ${STACK_NAME}
+    rm ${STACK_NAME}.zip
+  fi
+}
+
+removeFiles
 
 GOOS=linux GOARCH=amd64 go build .
 zip ${STACK_NAME}.zip ${STACK_NAME}
@@ -26,7 +33,8 @@ if [[ -z "${STACK_EXISTS}" ]] || [[ "${STACK_EXISTS}" == "" ]]; then
 		  ParameterKey=ServiceName,ParameterValue=${STACK_NAME} \
 		  ParameterKey=Environment,ParameterValue=dev \
 		  ParameterKey=BuildBucket,ParameterValue=${BUILD_BUCKET} \
-		  ParameterKey=BuildKey,ParameterValue=${STACK_NAME}.zip
+		  ParameterKey=BuildKey,ParameterValue=${STACK_NAME}.zip \
+		  ParameterKey=DBEndpoint,ParameterValue=http://localhost:4569
 else
   aws --region us-east-1 --endpoint-url http://localhost:4572 s3 cp ./${STACK_NAME}.zip s3://${BUILD_BUCKET}/${STACK_NAME}.zip
   aws --region us-east-1 --endpoint-url http://localhost:4581 cloudformation update-stack \
@@ -37,7 +45,13 @@ else
 		  ParameterKey=ServiceName,ParameterValue=${STACK_NAME} \
 		  ParamterKey=Environment,ParamterValue=dev \
 		  ParameterKey=BuildBucket,ParamterValue=${BUILD_BUCKET} \
-		  ParameterKey=BuildKey,ParameterValue=${STACK_NAME}.zip
+		  ParameterKey=BuildKey,ParameterValue=${STACK_NAME}.zip \
+		  ParameterKey=DBEndpoint,ParameterValue=http://localhost:4569
 fi
+
+go test ./...
+go test ./... -bench=. -run=$$$
+
+removeFiles
 
 

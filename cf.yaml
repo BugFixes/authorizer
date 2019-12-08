@@ -16,6 +16,9 @@ Parameters:
   AuthPrefix:
     Type: String
     Default: 'bugfixes'
+  DBEndpoint:
+    Type: String
+    Default: !Join ['', ['http://', 'dynamodb.', !Ref 'AWS::Region', '.amazonaws.com']]
 
 Resources:
   Dynamo:
@@ -80,7 +83,7 @@ Resources:
       Environment:
         Variables:
           DB_TABLE: !Ref Dynamo
-          DB_ENDPOINT: !Join ['', ['http://', 'dynamodb.', !Ref 'AWS::Region', '.amazonaws.com']]
+          DB_ENDPOINT: !Ref DBEndpoint
           AUTH_HEAD: !Ref AuthHeader
           AUTH_PREF: !Ref AuthPrefix
           DB_REGION: !Ref AWS::Region
