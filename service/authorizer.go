@@ -29,8 +29,8 @@ func Handler(ctx context.Context, event events.APIGatewayCustomAuthorizerRequest
 	}
 
 	// Token sent
-	fmt.Println(fmt.Sprintf("AUTH Key: %s", token))
-	fmt.Println(fmt.Sprintf("Event: %v", event))
+	fmt.Printf("AUTH Key: %s\n", token)
+	fmt.Printf("Event: %+v\n", event)
 
 	newEvent := events.APIGatewayCustomAuthorizerRequest{
 		Type:               event.Type,
@@ -41,13 +41,13 @@ func Handler(ctx context.Context, event events.APIGatewayCustomAuthorizerRequest
 	// Test token
 	if strings.Contains(token, os.Getenv("AUTH_PREF")) {
 		if validator.Key(token, service) {
-			fmt.Println(fmt.Sprintf("allowed: %s", token))
+			fmt.Printf("allowed: %s\n", token)
 			return policy.GenerateAllow(newEvent), nil
 		}
-		fmt.Println(fmt.Sprintf("denied: %s", token))
+		fmt.Printf("denied: %s\n", token)
 		return policy.GenerateDeny(newEvent), nil
 	}
 
-	fmt.Println(fmt.Sprintf("Pref: %s, key: %s", os.Getenv("AUTH_PREF"), token))
+	fmt.Printf("Pref: %s, key: %s\n", os.Getenv("AUTH_PREF"), token)
 	return events.APIGatewayCustomAuthorizerResponse{}, fmt.Errorf("%s", "Unauthorized")
 }

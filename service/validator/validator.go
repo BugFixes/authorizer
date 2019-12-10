@@ -24,7 +24,7 @@ func matchKey(key string) KeyData {
 		Endpoint: aws.String(os.Getenv("DB_ENDPOINT")),
 	})
 	if err != nil {
-		fmt.Println(fmt.Sprintf("Key Session Error: %v", err))
+		fmt.Printf("Key Session Error: %+v\n", err)
 		return KeyData{}
 	}
 	svc := dynamodb.New(s)
@@ -37,13 +37,13 @@ func matchKey(key string) KeyData {
 		TableName: aws.String(os.Getenv("DB_TABLE")),
 	})
 	if err != nil {
-		fmt.Println(fmt.Sprintf("Key Get Error: %v", err))
+		fmt.Printf("Key Get Error: %+v\n", err)
 		return KeyData{}
 	}
 	returnData := KeyData{}
 	unErr := dynamodbattribute.UnmarshalMap(result.Item, &returnData)
 	if unErr != nil {
-		fmt.Println(fmt.Sprintf("Key Unmarshall Error: %v", unErr))
+		fmt.Printf("Key Unmarshall Error: %+v\n", unErr)
 		return KeyData{}
 	}
 
@@ -52,11 +52,7 @@ func matchKey(key string) KeyData {
 
 func (k KeyData) validKey() bool {
 	t := time.Now().Unix()
-	if int(t) <= k.ExpireTime {
-		return true
-	}
-
-	return false
+	return int(t) <= k.ExpireTime
 }
 
 // Key validate the key

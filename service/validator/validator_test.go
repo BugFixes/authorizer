@@ -31,7 +31,7 @@ func injectKey(key string, expires time.Time, service string) error {
 				S: aws.String(key),
 			},
 			"expires": {
-				N: aws.String(fmt.Sprintf("%v", expires.Unix())),
+				N: aws.String(fmt.Sprintf("%d", expires.Unix())),
 			},
 			"service": {
 				S: aws.String(service),
@@ -47,12 +47,12 @@ func injectKey(key string, expires time.Time, service string) error {
 		if aerr, ok := err.(awserr.Error); ok {
 			switch aerr.Code() {
 			case dynamodb.ErrCodeConditionalCheckFailedException:
-				return fmt.Errorf("ErrCodeConditionalCheckFailedException: %w", aerr)
+				return fmt.Errorf("validator ErrCodeConditionalCheckFailedException: %w", aerr)
 			case "ValidationException":
-				return fmt.Errorf("validation error: %w", aerr)
+				return fmt.Errorf("validator validation error: %w", aerr)
 			default:
-				fmt.Println(fmt.Sprintf("unknown code err reason: %v", input))
-				return fmt.Errorf("unknown code err: %w", aerr)
+				fmt.Printf("validator unknown code err reason: %+v\n", input)
+				return fmt.Errorf("validator unknown code err: %w", aerr)
 			}
 		}
 	}
@@ -85,15 +85,9 @@ func deleteKey(key string) error {
 }
 
 func TestKey(t *testing.T) {
-	if len(os.Args) >= 1 {
-		for _, env := range os.Args {
-			if env == "localDev" {
-				err := godotenv.Load()
-				if err != nil {
-					fmt.Println(fmt.Sprintf("godotenv err: %v", err))
-				}
-			}
-		}
+	err := godotenv.Load()
+	if err != nil {
+		t.Errorf("godotenv err: %w", err)
 	}
 
 	type request struct {
@@ -140,19 +134,19 @@ func TestKey(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			injectKey(test.key, test.expires, test.service)
+			_ = injectKey(test.key, test.expires, test.service)
 
 			resp := validator.Key(test.key, test.serviceTest)
 			passed := assert.IsType(t, test.expect, resp)
 			if !passed {
-				t.Errorf("validator type test failed: %v", test.expect)
+				t.Errorf("validator type test failed: %+v", test.expect)
 			}
 			passed = assert.Equal(t, test.expect, resp)
 			if !passed {
-				t.Errorf("validator equal test failed: %v", test.expect)
+				t.Errorf("validator equal test failed: %+v, resp: %+v", test.expect, resp)
 			}
 
-			deleteKey(test.key)
+			_ = deleteKey(test.key)
 		})
 	}
 }
@@ -160,15 +154,9 @@ func TestKey(t *testing.T) {
 func BenchmarkKey(b *testing.B) {
 	b.ReportAllocs()
 
-	if len(os.Args) >= 1 {
-		for _, env := range os.Args {
-			if env == "localDev" {
-				err := godotenv.Load()
-				if err != nil {
-					fmt.Println(fmt.Sprintf("godotenv err: %v", err))
-				}
-			}
-		}
+	err := godotenv.Load()
+	if err != nil {
+		b.Errorf("godotenv err: %w", err)
 	}
 
 	type request struct {
@@ -213,13 +201,13 @@ func BenchmarkKey(b *testing.B) {
 	for _, test := range tests {
 		b.StopTimer()
 
-		injectKey(test.key, test.expires, test.service)
+		_ = injectKey(test.key, test.expires, test.service)
 
 		resp := validator.Key(test.key, test.serviceTest)
 		assert.IsType(b, test.expect, resp)
 		assert.Equal(b, test.expect, resp)
 
-		deleteKey(test.key)
+		_ = deleteKey(test.key)
 
 		b.StartTimer()
 

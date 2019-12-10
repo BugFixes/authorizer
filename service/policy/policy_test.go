@@ -1,8 +1,6 @@
 package policy_test
 
 import (
-	"fmt"
-	"os"
 	"testing"
 
 	"github.com/aws/aws-lambda-go/events"
@@ -12,15 +10,9 @@ import (
 )
 
 func TestGenerateAllow(t *testing.T) {
-	if len(os.Args) >= 1 {
-		for _, env := range os.Args {
-			if env == "localDev" {
-				err := godotenv.Load()
-				if err != nil {
-					fmt.Println(fmt.Sprintf("godotenv err: %v", err))
-				}
-			}
-		}
+	err := godotenv.Load()
+	if err != nil {
+		t.Errorf("godotenv err: %w", err)
 	}
 
 	tests := []struct {
@@ -61,26 +53,20 @@ func TestGenerateAllow(t *testing.T) {
 			resp := policy.GenerateAllow(test.request)
 			passed := assert.IsType(t, test.expect, resp)
 			if !passed {
-				t.Errorf("allow policy type failed: %v, %v", test.expect, resp)
+				t.Errorf("allow policy type failed: %+v, %+v", test.expect, resp)
 			}
 			passed = assert.Equal(t, test.expect, resp)
 			if !passed {
-				t.Errorf("allow policy equal failed: %v, %v", test.expect, resp)
+				t.Errorf("allow policy equal failed: %+v, %+v", test.expect, resp)
 			}
 		})
 	}
 }
 
 func TestGenerateDeny(t *testing.T) {
-	if len(os.Args) >= 1 {
-		for _, env := range os.Args {
-			if env == "localDev" {
-				err := godotenv.Load()
-				if err != nil {
-					fmt.Println(fmt.Sprintf("godotenv err: %v", err))
-				}
-			}
-		}
+	err := godotenv.Load()
+	if err != nil {
+		t.Errorf("godotenv err: %w", err)
 	}
 
 	tests := []struct {
@@ -121,11 +107,11 @@ func TestGenerateDeny(t *testing.T) {
 			resp := policy.GenerateDeny(test.request)
 			passed := assert.IsType(t, test.expect, resp)
 			if !passed {
-				t.Errorf("denied policy type failed: %v, %v", test.expect, resp)
+				t.Errorf("denied policy type failed: %+v, %+v", test.expect, resp)
 			}
 			passed = assert.Equal(t, test.expect, resp)
 			if !passed {
-				t.Errorf("denied policy equal failed: %v, %v", test.expect, resp)
+				t.Errorf("denied policy equal failed: %+v, %+v", test.expect, resp)
 			}
 		})
 	}
@@ -133,15 +119,10 @@ func TestGenerateDeny(t *testing.T) {
 
 func BenchmarkGenerateAllow(b *testing.B) {
 	b.ReportAllocs()
-	if len(os.Args) >= 1 {
-		for _, env := range os.Args {
-			if env == "localDev" {
-				err := godotenv.Load()
-				if err != nil {
-					fmt.Println(fmt.Sprintf("godotenv err: %v", err))
-				}
-			}
-		}
+
+	err := godotenv.Load()
+	if err != nil {
+		b.Errorf("godotenv err: %w", err)
 	}
 
 	tests := []struct {
@@ -190,15 +171,9 @@ func BenchmarkGenerateAllow(b *testing.B) {
 func BenchmarkGenerateDeny(b *testing.B) {
 	b.ReportAllocs()
 
-	if len(os.Args) >= 1 {
-		for _, env := range os.Args {
-			if env == "localDev" {
-				err := godotenv.Load()
-				if err != nil {
-					fmt.Println(fmt.Sprintf("godotenv err: %v", err))
-				}
-			}
-		}
+	err := godotenv.Load()
+	if err != nil {
+		b.Errorf("godotenv err: %w", err)
 	}
 
 	tests := []struct {
