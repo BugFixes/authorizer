@@ -36,6 +36,8 @@ jobs:
               run: pip install -q localstack; docker pull localstack/localstack
             - name: awslocal install
               run: pip install -q awscli-local
+            - name: localstack exists ...
+              run: which localstack
             - name: localstack start
               run: SERVICES=dynamodb localstack start --docker & sleep 20
             - name: setup database
