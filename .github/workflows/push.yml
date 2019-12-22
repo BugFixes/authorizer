@@ -1,0 +1,17 @@
+name: Lint
+on:
+    push:
+        branches: ["master"]
+
+jobs:
+    lint:
+        runs-on: ubuntu-latest
+        steps:
+            - name: checkout
+              uses: actions/checkout@v1
+              with:
+                fetch-depth: 1
+            - name: linter
+              uses: actions-contrib/golangci-lint@master
+              args: run
+
