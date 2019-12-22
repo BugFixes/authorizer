@@ -19,4 +19,15 @@ jobs:
               run: curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.21.0
             - name: lint
               run: $(go env GOPATH)/bin/golangci-lint run
+            - name: localstack install
+              run: pip install -q localstack; docker pull localstack/localstack
+            - name: awslocal install
+              run: pip install -q awscli-local
+            - name: localstack start
+              run: SERVICES=dynamodb localstack start --docker & sleep 20
+            - name: setup database
+              run: ./dev.sh db
+            - name: run tests
+              run: go test ./...
+
 
