@@ -1,4 +1,4 @@
-name: Lint
+name: Master Pusher
 on:
     push:
         branches: ["master"]
@@ -44,6 +44,12 @@ jobs:
                   AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
               run: ./dev.sh db
             - name: run tests
+              env:
+                  AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+                  AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+                  DB_TABLE: authorizer-dynamo-dev
+                  DB_REGION: us-east-1
+                  DB_ENDPOINT: http://0.0.0.0:4569
               run: go test ./...
 
 

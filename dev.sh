@@ -58,14 +58,14 @@ function justDB()
     echo "justDB"
     aws dynamodb delete-table \
         --table-name authorizer-dynamo-dev \
-        --endpoint http://docker.devel:4569
+        --endpoint http://0.0.0.0:4569
 
     aws dynamodb create-table \
         --table-name authorizer-dynamo-dev \
         --attribute-definitions AttributeName=authKey,AttributeType=S \
         --key-schema AttributeName=agentId,KeyType=HASH \
         --provisioned-throughput ReadCapacityUnits=5,WriteCapacityUnits=5 \
-        --endpoint-url http://docker.devel:4569
+        --endpoint-url http://0.0.0.0:4569
 }
 
 function build()
