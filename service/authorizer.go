@@ -1,9 +1,7 @@
 package service
 
 import (
-	"context"
 	"fmt"
-	"os"
 	"strings"
 
 	"github.com/aws/aws-lambda-go/events"
@@ -12,42 +10,62 @@ import (
 )
 
 // Handler process request
-func Handler(ctx context.Context, event events.APIGatewayCustomAuthorizerRequestTypeRequest) (events.APIGatewayCustomAuthorizerResponse, error) {
-	token := ""
+func Handler(event events.APIGatewayCustomAuthorizerRequestTypeRequest) (events.APIGatewayCustomAuthorizerResponse, error) {
+	// keys
+	agentKey := "x-agent-id"
+	APIKey := "x-api-key"
+	APISecret := "x-api-secret"
 
-	service := ""
-	authHeader := strings.ToLower(os.Getenv("AUTH_HEAD"))
-	for Key, Value := range event.Headers {
-		key := strings.ToLower(Key)
-		if key == authHeader {
-			token = Value
-		}
+	// values
+	var agentId, agentAPIKey, agentAPISecret string
 
-		if Key == "Host" {
-			service = Value
+	for key, value := range event.Headers {
+		key := strings.ToLower(key)
+		switch key {
+		case agentKey:
+			agentId = value
+		case APIKey:
+			agentAPIKey = value
+		case APISecret:
+			agentAPISecret = value
 		}
 	}
 
-	// Token sent
-	fmt.Printf("AUTH Key: %s\n", token)
-	fmt.Printf("Event: %+v\n", event)
+	if agentId == "" {
+		err := func() error {
+			return nil
+		}()
+		if err != nil {
+			fmt.Printf("Seriouslly how the fuck is it not nil\n")
+		}
+		agentId, err = validator.LookupAgentId(agentAPIKey, agentAPISecret)
+		if err != nil {
+			fmt.Printf("Invalid AgentId: %+v, key: %s, secret: %s\n", err, agentAPISecret, agentAPIKey)
+			return policy.GenerateDeny(events.APIGatewayCustomAuthorizerRequest{
+				Type:               event.Type,
+				AuthorizationToken: agentId,
+				MethodArn:          event.MethodArn,
+			}), nil
+		}
+	}
 
 	newEvent := events.APIGatewayCustomAuthorizerRequest{
 		Type:               event.Type,
-		AuthorizationToken: token,
+		AuthorizationToken: agentId,
 		MethodArn:          event.MethodArn,
 	}
 
-	// Test token
-	if strings.Contains(token, os.Getenv("AUTH_PREF")) {
-		if validator.Key(token, service) {
-			fmt.Printf("allowed: %s\n", token)
-			return policy.GenerateAllow(newEvent), nil
-		}
-		fmt.Printf("denied: %s\n", token)
+	// test agentid
+	agentValid, err := validator.AgentId(agentId)
+	if err != nil {
+		fmt.Printf("Invalid Agent: %+v\n", newEvent)
 		return policy.GenerateDeny(newEvent), nil
 	}
 
-	fmt.Printf("Pref: %s, key: %s\n", os.Getenv("AUTH_PREF"), token)
-	return events.APIGatewayCustomAuthorizerResponse{}, fmt.Errorf("%s", "Unauthorized")
+	if !agentValid {
+		fmt.Printf("Deny Agent: %+v\n", newEvent)
+		return policy.GenerateDeny(newEvent), nil
+	}
+
+	return policy.GenerateAllow(newEvent), nil
 }

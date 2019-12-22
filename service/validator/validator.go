@@ -2,68 +2,97 @@ package validator
 
 import (
 	"fmt"
-	"os"
-	"time"
-
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbattribute"
+	"github.com/aws/aws-sdk-go/service/dynamodb/expression"
+	"os"
 )
 
-// KeyData object
-type KeyData struct {
-	Key        string `json:"authKey"`
-	ExpireTime int    `json:"expires"`
-	Service    string `json:"service"`
+type AgentData struct {
+	ID        string
+	Key       string
+	Secret    string
+	CompanyID string
+	Name      string
 }
 
-func matchKey(key string) KeyData {
+func LookupAgentId(key, secret string) (string, error) {
 	s, err := session.NewSession(&aws.Config{
 		Region:   aws.String(os.Getenv("DB_REGION")),
 		Endpoint: aws.String(os.Getenv("DB_ENDPOINT")),
 	})
 	if err != nil {
-		fmt.Printf("Key Session Error: %+v\n", err)
-		return KeyData{}
+		return "", fmt.Errorf("lookupAgent sesson: %w", err)
 	}
-	svc := dynamodb.New(s)
-	result, err := svc.GetItem(&dynamodb.GetItemInput{
+
+	keyFilter := expression.Name("key").Equal(expression.Value(aws.String(key)))
+	secretFilter := expression.Name("secret").Equal(expression.Value(aws.String(secret)))
+	proj := expression.NamesList(expression.Name("id"), expression.Name("key"), expression.Name("secret"), expression.Name("companyId"))
+	expr, err := expression.NewBuilder().WithFilter(keyFilter.And(secretFilter)).WithProjection(proj).Build()
+	if err != nil {
+		return "", fmt.Errorf("lookupAgent expression: %w", err)
+	}
+
+	result, err := dynamodb.New(s).Scan(&dynamodb.ScanInput{
+		ExpressionAttributeNames:  expr.Names(),
+		ExpressionAttributeValues: expr.Values(),
+		FilterExpression:          expr.Filter(),
+		ProjectionExpression:      expr.Projection(),
+		TableName:                 aws.String(os.Getenv("DB_TABLE")),
+	})
+	if err != nil {
+		return "", fmt.Errorf("lookupAgent scanItem: %w", err)
+	}
+
+	if len(result.Items) >= 1 {
+		ad := AgentData{}
+		unMapErr := dynamodbattribute.UnmarshalMap(result.Items[0], &ad)
+		if unMapErr != nil {
+			return "", fmt.Errorf("lookupAgent unmarshall: %w", err)
+		}
+
+		if ad.ID == "" {
+			return "", fmt.Errorf("unknown agentId")
+		}
+
+		return ad.ID, nil
+	}
+
+	return "", fmt.Errorf("no agents found")
+}
+
+func AgentId(agentId string) (bool, error) {
+	s, err := session.NewSession(&aws.Config{
+		Region:   aws.String(os.Getenv("DB_REGION")),
+		Endpoint: aws.String(os.Getenv("DB_ENDPOINT")),
+	})
+	if err != nil {
+		return false, fmt.Errorf("agentId session: %w", err)
+	}
+
+	result, err := dynamodb.New(s).GetItem(&dynamodb.GetItemInput{
 		Key: map[string]*dynamodb.AttributeValue{
-			"authKey": {
-				S: aws.String(key),
+			"id": {
+				S: aws.String(agentId),
 			},
 		},
 		TableName: aws.String(os.Getenv("DB_TABLE")),
 	})
 	if err != nil {
-		fmt.Printf("Key Get Error: %+v\n", err)
-		return KeyData{}
-	}
-	returnData := KeyData{}
-	unErr := dynamodbattribute.UnmarshalMap(result.Item, &returnData)
-	if unErr != nil {
-		fmt.Printf("Key Unmarshall Error: %+v\n", unErr)
-		return KeyData{}
+		return false, fmt.Errorf("agentid: %w", err)
 	}
 
-	return returnData
-}
-
-func (k KeyData) validKey() bool {
-	t := time.Now().Unix()
-	return int(t) <= k.ExpireTime
-}
-
-// Key validate the key
-func Key(key string, service string) bool {
-	keyFound := matchKey(key)
-
-	if keyFound.validKey() {
-		if keyFound.Service == service {
-			return true
-		}
+	ad := AgentData{}
+	unMapErr := dynamodbattribute.UnmarshalMap(result.Item, &ad)
+	if unMapErr != nil {
+		return false, fmt.Errorf("agentid unmarshall: %w", err)
 	}
 
-	return false
+	if ad.ID == "" {
+		return false, nil
+	}
+
+	return true, nil
 }

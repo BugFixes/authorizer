@@ -1,12 +1,7 @@
 package service_test
 
 import (
-	"context"
 	"fmt"
-	"os"
-	"testing"
-	"time"
-
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
@@ -15,9 +10,19 @@ import (
 	"github.com/bugfixes/authorizer/service"
 	"github.com/joho/godotenv"
 	"github.com/stretchr/testify/assert"
+	"os"
+	"testing"
 )
 
-func injectKey(key string, expires time.Time, service string) error {
+type AgentData struct {
+	ID        string
+	Key       string
+	Secret    string
+	CompanyID string
+	Name      string
+}
+
+func injectAgent(data AgentData) error {
 	s, err := session.NewSession(&aws.Config{
 		Region:   aws.String(os.Getenv("DB_REGION")),
 		Endpoint: aws.String(os.Getenv("DB_ENDPOINT")),
@@ -29,19 +34,25 @@ func injectKey(key string, expires time.Time, service string) error {
 	input := &dynamodb.PutItemInput{
 		TableName: aws.String(os.Getenv("DB_TABLE")),
 		Item: map[string]*dynamodb.AttributeValue{
-			"authKey": {
-				S: aws.String(key),
+			"id": {
+				S: aws.String(data.ID),
 			},
-			"expires": {
-				N: aws.String(fmt.Sprintf("%d", expires.Unix())),
+			"key": {
+				S: aws.String(data.Key),
 			},
-			"service": {
-				S: aws.String(service),
+			"secret": {
+				S: aws.String(data.Secret),
+			},
+			"companyId": {
+				S: aws.String(data.CompanyID),
+			},
+			"name": {
+				S: aws.String(data.Name),
 			},
 		},
-		ConditionExpression: aws.String("attribute_not_exists(#AUTHKEY)"),
+		ConditionExpression: aws.String("attribute_not_exists(#ID)"),
 		ExpressionAttributeNames: map[string]*string{
-			"#AUTHKEY": aws.String("authKey"),
+			"#ID": aws.String("id"),
 		},
 	}
 	_, err = svc.PutItem(input)
@@ -49,12 +60,12 @@ func injectKey(key string, expires time.Time, service string) error {
 		if aerr, ok := err.(awserr.Error); ok {
 			switch aerr.Code() {
 			case dynamodb.ErrCodeConditionalCheckFailedException:
-				return fmt.Errorf("authorizer ErrCodeConditionalCheckFailedException: %w", aerr)
+				return fmt.Errorf("validator ErrCodeConditionalCheckFailedException: %w", aerr)
 			case "ValidationException":
-				return fmt.Errorf("authorizer validation error: %w", aerr)
+				return fmt.Errorf("validator validation error: %w", aerr)
 			default:
-				fmt.Printf("authorizer unknown code err reason: %+v\n", input)
-				return fmt.Errorf("authorizer unknown code err: %w", aerr)
+				fmt.Printf("validator unknown code err reason: %+v\n", input)
+				return fmt.Errorf("validator unknown code err: %w", aerr)
 			}
 		}
 	}
@@ -62,7 +73,7 @@ func injectKey(key string, expires time.Time, service string) error {
 	return nil
 }
 
-func deleteKey(key string) error {
+func deleteAgent(id string) error {
 	s, err := session.NewSession(&aws.Config{
 		Region:   aws.String(os.Getenv("DB_REGION")),
 		Endpoint: aws.String(os.Getenv("DB_ENDPOINT")),
@@ -73,8 +84,8 @@ func deleteKey(key string) error {
 	svc := dynamodb.New(s)
 	_, err = svc.DeleteItem(&dynamodb.DeleteItemInput{
 		Key: map[string]*dynamodb.AttributeValue{
-			"authKey": {
-				S: aws.String(key),
+			"id": {
+				S: aws.String(id),
 			},
 		},
 		TableName: aws.String(os.Getenv("DB_TABLE")),
@@ -92,31 +103,26 @@ func TestHandler(t *testing.T) {
 		t.Errorf("godotenv err: %w", err)
 	}
 
-	type inject struct {
-		key     string
-		expires time.Time
-		service string
-	}
-
 	tests := []struct {
-		name string
-		inject
+		name    string
+		agent   AgentData
 		request events.APIGatewayCustomAuthorizerRequestTypeRequest
 		expect  events.APIGatewayCustomAuthorizerResponse
 		err     error
 	}{
 		{
-			name: "+10 min",
-			inject: inject{
-				key:     "tester-69e668a5-b11f-405b-ae8a-e0eb3e6f371a",
-				expires: time.Now().Add(10 * time.Minute),
-				service: "tester.test.com",
+			name: "allowed agentid",
+			agent: AgentData{
+				ID:        "ad4b99e1-dec8-4682-862a-6b017e7c7c70",
+				Key:       "94365b00-c6df-483f-804e-363312750500",
+				Secret:    "f7356946-5814-4b5e-ad45-0348a89576ef",
+				CompanyID: "b9e9153a-028c-4173-a7a8-e5063334416a",
+				Name:      "bugfixes test frontend -- allowed agentid",
 			},
 			request: events.APIGatewayCustomAuthorizerRequestTypeRequest{
 				Type: "TOKEN",
 				Headers: map[string]string{
-					"Host":                 "tester.test.com",
-					os.Getenv("AUTH_HEAD"): "tester-69e668a5-b11f-405b-ae8a-e0eb3e6f371a",
+					"x-agent-id": "ad4b99e1-dec8-4682-862a-6b017e7c7c70",
 				},
 				MethodArn: "arn:aws:execute-api:eu-west-2:123456789:wmcwzleu0i/ESTestInvoke-stage/GET/",
 			},
@@ -128,6 +134,113 @@ func TestHandler(t *testing.T) {
 						{
 							Action:   []string{"execute-api:Invoke"},
 							Effect:   "Allow",
+							Resource: []string{"arn:aws:execute-api:eu-west-2:123456789:wmcwzleu0i/ESTestInvoke-stage/GET/"},
+						},
+					},
+				},
+				Context: map[string]interface{}{
+					"booleanKey": true,
+					"numberKey":  123,
+					"stringKey":  "stringval",
+				},
+			},
+		},
+		{
+			name: "denied agentid",
+			agent: AgentData{
+				ID:        "ad4b99e1-dec8-4682-862a-6b017e7c7c71",
+				Key:       "94365b00-c6df-483f-804e-363312750500",
+				Secret:    "f7356946-5814-4b5e-ad45-0348a89576ef",
+				CompanyID: "b9e9153a-028c-4173-a7a8-e5063334416a",
+				Name:      "bugfixes test frontend -- denied agentid",
+			},
+			request: events.APIGatewayCustomAuthorizerRequestTypeRequest{
+				Type: "TOKEN",
+				Headers: map[string]string{
+					"x-agent-id": "ad4b99e1-dec8-4682-862a-6b017e7c7c70",
+				},
+				MethodArn: "arn:aws:execute-api:eu-west-2:123456789:wmcwzleu0i/ESTestInvoke-stage/GET/",
+			},
+			expect: events.APIGatewayCustomAuthorizerResponse{
+				PrincipalID: "system",
+				PolicyDocument: events.APIGatewayCustomAuthorizerPolicy{
+					Version: "2012-10-17",
+					Statement: []events.IAMPolicyStatement{
+						{
+							Action:   []string{"execute-api:Invoke"},
+							Effect:   "Deny",
+							Resource: []string{"arn:aws:execute-api:eu-west-2:123456789:wmcwzleu0i/ESTestInvoke-stage/GET/"},
+						},
+					},
+				},
+				Context: map[string]interface{}{
+					"booleanKey": true,
+					"numberKey":  123,
+					"stringKey":  "stringval",
+				},
+			},
+		},
+		{
+			name: "allowed key and secret",
+			agent: AgentData{
+				ID:        "ad4b99e1-dec8-4682-862a-6b017e7c7c72",
+				Key:       "94365b00-c6df-483f-804e-363312750500",
+				Secret:    "f7356946-5814-4b5e-ad45-0348a89576ef",
+				CompanyID: "b9e9153a-028c-4173-a7a8-e5063334416a",
+				Name:      "bugfixes test frontend -- allowed key",
+			},
+			request: events.APIGatewayCustomAuthorizerRequestTypeRequest{
+				Type: "TOKEN",
+				Headers: map[string]string{
+					"x-api-key":    "94365b00-c6df-483f-804e-363312750500",
+					"x-api-secret": "f7356946-5814-4b5e-ad45-0348a89576ef",
+				},
+				MethodArn: "arn:aws:execute-api:eu-west-2:123456789:wmcwzleu0i/ESTestInvoke-stage/GET/",
+			},
+			expect: events.APIGatewayCustomAuthorizerResponse{
+				PrincipalID: "system",
+				PolicyDocument: events.APIGatewayCustomAuthorizerPolicy{
+					Version: "2012-10-17",
+					Statement: []events.IAMPolicyStatement{
+						{
+							Action:   []string{"execute-api:Invoke"},
+							Effect:   "Allow",
+							Resource: []string{"arn:aws:execute-api:eu-west-2:123456789:wmcwzleu0i/ESTestInvoke-stage/GET/"},
+						},
+					},
+				},
+				Context: map[string]interface{}{
+					"booleanKey": true,
+					"numberKey":  123,
+					"stringKey":  "stringval",
+				},
+			},
+		},
+		{
+			name: "denied key and secret",
+			agent: AgentData{
+				ID:        "ad4b99e1-dec8-4682-862a-6b017e7c7c73",
+				Key:       "94365b00-c6df-483f-804e-363312750500",
+				Secret:    "f7356946-5814-4b5e-ad45-0348a89576ef",
+				CompanyID: "b9e9153a-028c-4173-a7a8-e5063334416a",
+				Name:      "bugfixes test frontend -- denied key",
+			},
+			request: events.APIGatewayCustomAuthorizerRequestTypeRequest{
+				Type: "TOKEN",
+				Headers: map[string]string{
+					"x-api-key":    "94365b00-c6df-483f-804e-363312750501",
+					"x-api-secret": "f7356946-5814-4b5e-ad45-0348a89576ef",
+				},
+				MethodArn: "arn:aws:execute-api:eu-west-2:123456789:wmcwzleu0i/ESTestInvoke-stage/GET/",
+			},
+			expect: events.APIGatewayCustomAuthorizerResponse{
+				PrincipalID: "system",
+				PolicyDocument: events.APIGatewayCustomAuthorizerPolicy{
+					Version: "2012-10-17",
+					Statement: []events.IAMPolicyStatement{
+						{
+							Action:   []string{"execute-api:Invoke"},
+							Effect:   "Deny",
 							Resource: []string{"arn:aws:execute-api:eu-west-2:123456789:wmcwzleu0i/ESTestInvoke-stage/GET/"},
 						},
 					},
@@ -144,10 +257,13 @@ func TestHandler(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			// inject key
-			_ = injectKey(test.inject.key, test.inject.expires, test.inject.service)
+			injErr := injectAgent(test.agent)
+			if injErr != nil {
+				t.Errorf("inject err: %w", err)
+			}
 
 			// do the test
-			resp, err := service.Handler(context.Background(), test.request)
+			resp, err := service.Handler(test.request)
 			passed := assert.IsType(t, test.err, err)
 			if !passed {
 				t.Errorf("%s type failed: %w", test.name, err)
@@ -158,84 +274,87 @@ func TestHandler(t *testing.T) {
 			}
 
 			// delete the tester key
-			_ = deleteKey(test.inject.key)
+			delErr := deleteAgent(test.agent.ID)
+			if delErr != nil {
+				t.Errorf("delete err: %w", err)
+			}
 		})
 	}
 }
 
-func BenchmarkHandler(b *testing.B) {
-	b.ReportAllocs()
-
-	err := godotenv.Load()
-	if err != nil {
-		b.Errorf("godotenv err: %w", err)
-	}
-
-	type inject struct {
-		key     string
-		expires time.Time
-		service string
-	}
-
-	tests := []struct {
-		inject
-		request events.APIGatewayCustomAuthorizerRequestTypeRequest
-		expect  events.APIGatewayCustomAuthorizerResponse
-		err     error
-	}{
-		{
-			inject: inject{
-				key:     "tester-69e668a5-b11f-405b-ae8a-e0eb3e6f371a",
-				expires: time.Now().Add(10 * time.Minute),
-				service: "tester.test.com",
-			},
-			request: events.APIGatewayCustomAuthorizerRequestTypeRequest{
-				Type: "TOKEN",
-				Headers: map[string]string{
-					"Host":                 "tester.test.com",
-					os.Getenv("AUTH_HEAD"): "tester-69e668a5-b11f-405b-ae8a-e0eb3e6f371a",
-				},
-				MethodArn: "arn:aws:execute-api:eu-west-2:123456789:wmcwzleu0i/ESTestInvoke-stage/GET/",
-			},
-			expect: events.APIGatewayCustomAuthorizerResponse{
-				PrincipalID: "system",
-				PolicyDocument: events.APIGatewayCustomAuthorizerPolicy{
-					Version: "2012-10-17",
-					Statement: []events.IAMPolicyStatement{
-						{
-							Action:   []string{"execute-api:Invoke"},
-							Effect:   "Allow",
-							Resource: []string{"arn:aws:execute-api:eu-west-2:123456789:wmcwzleu0i/ESTestInvoke-stage/GET/"},
-						},
-					},
-				},
-				Context: map[string]interface{}{
-					"booleanKey": true,
-					"numberKey":  123,
-					"stringKey":  "stringval",
-				},
-			},
-		},
-	}
-
-	b.ResetTimer()
-
-	for _, test := range tests {
-		b.StartTimer()
-		// inject key
-		_ = injectKey(test.inject.key, test.inject.expires, test.inject.service)
-
-		// do the test
-		resp, err := service.Handler(context.Background(), test.request)
-		passed := assert.IsType(b, test.err, err)
-		if !passed {
-			b.Errorf("test: %+v, expect: %+v, resp: %+v, err: %w", test.request, test.expect, resp, err)
-		}
-		assert.Equal(b, test.expect, resp)
-
-		// delete the tester key
-		_ = deleteKey(test.inject.key)
-
-		b.StartTimer()
-	}
-}
+//func BenchmarkHandler(b *testing.B) {
+//	b.ReportAllocs()
+//
+//	err := godotenv.Load()
+//	if err != nil {
+//		b.Errorf("godotenv err: %w", err)
+//	}
+//
+//	type inject struct {
+//		key     string
+//		expires time.Time
+//		service string
+//	}
+//
+//	tests := []struct {
+//		inject
+//		request events.APIGatewayCustomAuthorizerRequestTypeRequest
+//		expect  events.APIGatewayCustomAuthorizerResponse
+//		err     error
+//	}{
+//		{
+//			inject: inject{
+//				key:     "tester-69e668a5-b11f-405b-ae8a-e0eb3e6f371a",
+//				expires: time.Now().Add(10 * time.Minute),
+//				service: "tester.test.com",
+//			},
+//			request: events.APIGatewayCustomAuthorizerRequestTypeRequest{
+//				Type: "TOKEN",
+//				Headers: map[string]string{
+//					"Host":                 "tester.test.com",
+//					os.Getenv("AUTH_HEAD"): "tester-69e668a5-b11f-405b-ae8a-e0eb3e6f371a",
+//				},
+//				MethodArn: "arn:aws:execute-api:eu-west-2:123456789:wmcwzleu0i/ESTestInvoke-stage/GET/",
+//			},
+//			expect: events.APIGatewayCustomAuthorizerResponse{
+//				PrincipalID: "system",
+//				PolicyDocument: events.APIGatewayCustomAuthorizerPolicy{
+//					Version: "2012-10-17",
+//					Statement: []events.IAMPolicyStatement{
+//						{
+//							Action:   []string{"execute-api:Invoke"},
+//							Effect:   "Allow",
+//							Resource: []string{"arn:aws:execute-api:eu-west-2:123456789:wmcwzleu0i/ESTestInvoke-stage/GET/"},
+//						},
+//					},
+//				},
+//				Context: map[string]interface{}{
+//					"booleanKey": true,
+//					"numberKey":  123,
+//					"stringKey":  "stringval",
+//				},
+//			},
+//		},
+//	}
+//
+//	b.ResetTimer()
+//
+//	for _, test := range tests {
+//		b.StartTimer()
+//		// inject key
+//		_ = injectKey(test.inject.key, test.inject.expires, test.inject.service)
+//
+//		resp, err := service.Handler(test.request)
+//		// do the test
+//		passed := assert.IsType(b, test.err, err)
+//		if !passed {
+//			b.Errorf("test: %+v, expect: %+v, resp: %+v, err: %w", test.request, test.expect, resp, err)
+//		}
+//		assert.Equal(b, test.expect, resp)
+//
+//		// delete the tester key
+//		_ = deleteKey(test.inject.key)
+//
+//		b.StartTimer()
+//	}
+//}

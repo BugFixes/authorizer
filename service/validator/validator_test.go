@@ -2,10 +2,6 @@ package validator_test
 
 import (
 	"fmt"
-	"os"
-	"testing"
-	"time"
-
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/aws/session"
@@ -13,9 +9,11 @@ import (
 	"github.com/bugfixes/authorizer/service/validator"
 	"github.com/joho/godotenv"
 	"github.com/stretchr/testify/assert"
+	"os"
+	"testing"
 )
 
-func injectKey(key string, expires time.Time, service string) error {
+func injectAgent(data validator.AgentData) error {
 	s, err := session.NewSession(&aws.Config{
 		Region:   aws.String(os.Getenv("DB_REGION")),
 		Endpoint: aws.String(os.Getenv("DB_ENDPOINT")),
@@ -27,19 +25,25 @@ func injectKey(key string, expires time.Time, service string) error {
 	input := &dynamodb.PutItemInput{
 		TableName: aws.String(os.Getenv("DB_TABLE")),
 		Item: map[string]*dynamodb.AttributeValue{
-			"authKey": {
-				S: aws.String(key),
+			"id": {
+				S: aws.String(data.ID),
 			},
-			"expires": {
-				N: aws.String(fmt.Sprintf("%d", expires.Unix())),
+			"key": {
+				S: aws.String(data.Key),
 			},
-			"service": {
-				S: aws.String(service),
+			"secret": {
+				S: aws.String(data.Secret),
+			},
+			"companyId": {
+				S: aws.String(data.CompanyID),
+			},
+			"name": {
+				S: aws.String(data.Name),
 			},
 		},
-		ConditionExpression: aws.String("attribute_not_exists(#AUTHKEY)"),
+		ConditionExpression: aws.String("attribute_not_exists(#ID)"),
 		ExpressionAttributeNames: map[string]*string{
-			"#AUTHKEY": aws.String("authKey"),
+			"#ID": aws.String("id"),
 		},
 	}
 	_, err = svc.PutItem(input)
@@ -60,7 +64,7 @@ func injectKey(key string, expires time.Time, service string) error {
 	return nil
 }
 
-func deleteKey(key string) error {
+func deleteAgent(id string) error {
 	s, err := session.NewSession(&aws.Config{
 		Region:   aws.String(os.Getenv("DB_REGION")),
 		Endpoint: aws.String(os.Getenv("DB_ENDPOINT")),
@@ -71,8 +75,8 @@ func deleteKey(key string) error {
 	svc := dynamodb.New(s)
 	_, err = svc.DeleteItem(&dynamodb.DeleteItemInput{
 		Key: map[string]*dynamodb.AttributeValue{
-			"authKey": {
-				S: aws.String(key),
+			"id": {
+				S: aws.String(id),
 			},
 		},
 		TableName: aws.String(os.Getenv("DB_TABLE")),
@@ -84,60 +88,55 @@ func deleteKey(key string) error {
 	return nil
 }
 
-func TestKey(t *testing.T) {
+func TestAgentId(t *testing.T) {
 	err := godotenv.Load()
 	if err != nil {
 		t.Errorf("godotenv err: %w", err)
 	}
 
-	type request struct {
-		key         string
-		expires     time.Time
-		service     string
-		serviceTest string
-	}
-
 	tests := []struct {
-		name string
-		request
-		expect bool
+		name    string
+		request validator.AgentData
+		expect  bool
+		err     error
 	}{
 		{
-			name: "tester +10 min",
-			request: request{
-				key:         "tester-69e668a5-b11f-405b-ae8a-e0eb3e6f371a",
-				expires:     time.Now().Add(10 * time.Minute),
-				service:     "tester",
-				serviceTest: "tester",
+			name: "agentid valid",
+			request: validator.AgentData{
+				ID:        "ad4b99e1-dec8-4682-862a-6b017e7c7c74",
+				Key:       "94365b00-c6df-483f-804e-363312750500",
+				Secret:    "f7356946-5814-4b5e-ad45-0348a89576ef",
+				CompanyID: "b9e9153a-028c-4173-a7a8-e5063334416a",
+				Name:      "bugfixes test frontend",
 			},
 			expect: true,
 		},
 		{
-			name: "tester -10 min",
-			request: request{
-				key:         "tester-69e668a5-b11f-405b-ae8a-e0eb3e6f371a",
-				expires:     time.Now().Add(-10 * time.Minute),
-				service:     "tester",
-				serviceTest: "tester",
-			},
-		},
-		{
-			name: "tester something else",
-			request: request{
-				key:         "tester-69e668a5-b11f-405b-ae8a-e0eb3e6f371a",
-				expires:     time.Now().Add(10 * time.Minute),
-				service:     "tester",
-				serviceTest: "somethingelse",
+			name: "agentid invalid",
+			request: validator.AgentData{
+				ID:        "ad4b99e1-dec8-4682-862a-6b017e7c7c75",
+				Key:       "94365b00-c6df-483f-804e-363312750500",
+				Secret:    "f7356946-5814-4b5e-ad45-0348a89576ef",
+				CompanyID: "b9e9153a-028c-4173-a7a8-e5063334416a",
+				Name:      "bugfixes test frontend",
 			},
 		},
 	}
 
+	injErr := injectAgent(tests[0].request)
+	if injErr != nil {
+		t.Errorf("injection err: %w", err)
+	}
+
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			_ = injectKey(test.key, test.expires, test.service)
 
-			resp := validator.Key(test.key, test.serviceTest)
-			passed := assert.IsType(t, test.expect, resp)
+			resp, err := validator.AgentId(test.request.ID)
+			passed := assert.IsType(t, test.err, err)
+			if !passed {
+				t.Errorf("validator err: %w", err)
+			}
+			passed = assert.IsType(t, test.expect, resp)
 			if !passed {
 				t.Errorf("validator type test failed: %+v", test.expect)
 			}
@@ -145,71 +144,124 @@ func TestKey(t *testing.T) {
 			if !passed {
 				t.Errorf("validator equal test failed: %+v, resp: %+v", test.expect, resp)
 			}
-
-			_ = deleteKey(test.key)
 		})
+	}
+
+	delErr := deleteAgent(tests[0].request.ID)
+	if delErr != nil {
+		t.Errorf("delete err: %w", err)
 	}
 }
 
-func BenchmarkKey(b *testing.B) {
-	b.ReportAllocs()
-
+func TestLookupAgentId(t *testing.T) {
 	err := godotenv.Load()
 	if err != nil {
-		b.Errorf("godotenv err: %w", err)
-	}
-
-	type request struct {
-		key         string
-		expires     time.Time
-		service     string
-		serviceTest string
+		t.Errorf("godotenv err: %w", err)
 	}
 
 	tests := []struct {
-		request
-		expect bool
+		name    string
+		request validator.AgentData
+		expect  string
+		err     error
 	}{
 		{
-			request: request{
-				key:         "tester-69e668a5-b11f-405b-ae8a-e0eb3e6f371a",
-				expires:     time.Now().Add(10 * time.Minute),
-				service:     "tester",
-				serviceTest: "tester",
+			name: "agentid found",
+			request: validator.AgentData{
+				ID:        "ad4b99e1-dec8-4682-862a-6b017e7c7c72",
+				Key:       "94365b00-c6df-483f-804e-363312750500",
+				Secret:    "f7356946-5814-4b5e-ad45-0348a89576ef",
+				CompanyID: "b9e9153a-028c-4173-a7a8-e5063334416a",
+				Name:      "bugfixes test frontend",
 			},
-			expect: true,
-		},
-		{
-			request: request{
-				key:         "tester-69e668a5-b11f-405b-ae8a-e0eb3e6f371a",
-				expires:     time.Now().Add(-10 * time.Minute),
-				service:     "tester",
-				serviceTest: "tester",
-			},
-		},
-		{
-			request: request{
-				key:         "tester-69e668a5-b11f-405b-ae8a-e0eb3e6f371a",
-				expires:     time.Now().Add(10 * time.Minute),
-				service:     "tester",
-				serviceTest: "somethingelse",
-			},
+			expect: "ad4b99e1-dec8-4682-862a-6b017e7c7c72",
 		},
 	}
 
-	b.ResetTimer()
+	injErr := injectAgent(tests[0].request)
+	if injErr != nil {
+		t.Errorf("injection err: %w", err)
+	}
+
 	for _, test := range tests {
-		b.StopTimer()
+		t.Run(test.name, func(t *testing.T) {
+			resp, err := validator.LookupAgentId(test.request.Key, test.request.Secret)
+			passed := assert.IsType(t, test.err, err)
+			if !passed {
+				t.Errorf("validator err: %w", err)
+			}
+			passed = assert.Equal(t, test.expect, resp)
+			if !passed {
+				t.Errorf("validator equal: %v, resp: %v", test.expect, resp)
+			}
+		})
+	}
 
-		_ = injectKey(test.key, test.expires, test.service)
-
-		resp := validator.Key(test.key, test.serviceTest)
-		assert.IsType(b, test.expect, resp)
-		assert.Equal(b, test.expect, resp)
-
-		_ = deleteKey(test.key)
-
-		b.StartTimer()
-
+	delErr := deleteAgent(tests[0].request.ID)
+	if delErr != nil {
+		t.Errorf("delete err: %w", err)
 	}
 }
+
+//func BenchmarkKey(b *testing.B) {
+//	b.ReportAllocs()
+//
+//	err := godotenv.Load()
+//	if err != nil {
+//		b.Errorf("godotenv err: %w", err)
+//	}
+//
+//	type request struct {
+//		key         string
+//		expires     time.Time
+//		service     string
+//		serviceTest string
+//	}
+//
+//	tests := []struct {
+//		request
+//		expect bool
+//	}{
+//		{
+//			request: request{
+//				key:         "tester-69e668a5-b11f-405b-ae8a-e0eb3e6f371a",
+//				expires:     time.Now().Add(10 * time.Minute),
+//				service:     "tester",
+//				serviceTest: "tester",
+//			},
+//			expect: true,
+//		},
+//		{
+//			request: request{
+//				key:         "tester-69e668a5-b11f-405b-ae8a-e0eb3e6f371a",
+//				expires:     time.Now().Add(-10 * time.Minute),
+//				service:     "tester",
+//				serviceTest: "tester",
+//			},
+//		},
+//		{
+//			request: request{
+//				key:         "tester-69e668a5-b11f-405b-ae8a-e0eb3e6f371a",
+//				expires:     time.Now().Add(10 * time.Minute),
+//				service:     "tester",
+//				serviceTest: "somethingelse",
+//			},
+//		},
+//	}
+//
+//	b.ResetTimer()
+//	for _, test := range tests {
+//		b.StopTimer()
+//
+//		_ = injectKey(test.key, test.expires, test.service)
+//
+//		resp := validator.Key(test.key, test.serviceTest)
+//		assert.IsType(b, test.expect, resp)
+//		assert.Equal(b, test.expect, resp)
+//
+//		_ = deleteKey(test.key)
+//
+//		b.StartTimer()
+//
+//	}
+//}
