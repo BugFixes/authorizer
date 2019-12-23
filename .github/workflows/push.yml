@@ -32,21 +32,17 @@ jobs:
               uses: actions/checkout@v1
               with:
                 fetch-depth: 1
-            - name: install deps
-              run: pip install wheel setuptools
-            - name: localstack install
-              run: pip install localstack
             - name: localstack docker
               run: docker pull localstack/localstack
-            - name: awslocal install
-              run: pip install awscli-local
-            - name: localstack start
-              run: SERVICES=dynamodb /usr/local/bin/localstack start --docker & sleep 20
-            - name: setup database
+            - name: install tests
               env:
-                  AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-                  AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-              run: ./dev.sh db
+                AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+                AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+              run: |
+                pip install wheel setuptools
+                pip install awscli-local localstack
+                SERVICES=dynamodb localstack start --docker & sleep 20
+                ./dev.sh db
             - name: run tests
               env:
                   AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
