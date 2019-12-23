@@ -32,8 +32,11 @@ jobs:
               uses: actions/checkout@v1
               with:
                 fetch-depth: 1
+            - name: install deps
+              run: pip install wheel setuptools && \
+                   pip3 install wheel
             - name: localstack install
-              run: pip install localstack setuptools wheel
+              run: pip install localstack
             - name: localstack docker
               run: docker pull localstack/localstack
             - name: awslocal install
