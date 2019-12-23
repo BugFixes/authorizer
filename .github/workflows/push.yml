@@ -33,9 +33,11 @@ jobs:
               with:
                 fetch-depth: 1
             - name: localstack install
-              run: pip install -q localstack; docker pull localstack/localstack
+              run: pip install localstack
+            - name: localstack docker
+              run: docker pull localstack/localstack
             - name: awslocal install
-              run: pip install -q awscli-local
+              run: pip install awscli-local
             - name: localstack exists ...
               run: which localstack
             - name: localstack start
