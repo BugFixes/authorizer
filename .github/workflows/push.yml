@@ -33,7 +33,7 @@ jobs:
               with:
                 fetch-depth: 1
             - name: localstack install
-              run: pip install localstack setuptools
+              run: pip install localstack setuptools wheel
             - name: localstack docker
               run: docker pull localstack/localstack
             - name: awslocal install
