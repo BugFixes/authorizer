@@ -39,8 +39,8 @@ jobs:
                 AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
                 AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
               run: |
-                pip install wheel setuptools
-                pip install awscli-local localstack
+                pip install wheel setuptools --upgrade
+                pip install awscli-local localstack --upgrade
                 SERVICES=dynamodb localstack start --docker & sleep 20
                 ./dev.sh db
             - name: run tests
