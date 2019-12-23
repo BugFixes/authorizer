@@ -56,16 +56,14 @@ function deleteStack()
 function justDB()
 {
     echo "justDB"
-    aws dynamodb delete-table \
-        --table-name authorizer-dynamo-dev \
-        --endpoint http://0.0.0.0:4569
+    awslocal dynamodb delete-table \
+        --table-name authorizer-dynamo-dev
 
-    aws dynamodb create-table \
+    awslocal dynamodb create-table \
         --table-name authorizer-dynamo-dev \
         --attribute-definitions AttributeName=authKey,AttributeType=S \
         --key-schema AttributeName=agentId,KeyType=HASH \
-        --provisioned-throughput ReadCapacityUnits=5,WriteCapacityUnits=5 \
-        --endpoint-url http://0.0.0.0:4569
+        --provisioned-throughput ReadCapacityUnits=5,WriteCapacityUnits=5
 }
 
 function build()

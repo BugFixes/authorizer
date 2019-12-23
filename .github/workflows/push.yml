@@ -41,7 +41,7 @@ jobs:
             - name: awslocal install
               run: pip install awscli-local
             - name: localstack start
-              run: SERVICES=dynamodb localstack start --docker & sleep 20
+              run: SERVICES=dynamodb /usr/local/bin/localstack start --docker & sleep 20
             - name: setup database
               env:
                   AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
