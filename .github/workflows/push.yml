@@ -43,6 +43,7 @@ jobs:
                 pip install wheel setuptools --upgrade
                 pip install awscli-local localstack --upgrade
                 SERVICES=dynamodb localstack start --docker & sleep 20
+                docker ps -a
                 ./dev.sh db
             - name: run tests
               env:
