@@ -61,8 +61,8 @@ function justDB()
 
     awslocal dynamodb create-table \
         --table-name authorizer-dynamo-dev \
-        --attribute-definitions AttributeName=authKey,AttributeType=S \
-        --key-schema AttributeName=agentId,KeyType=HASH \
+        --attribute-definitions AttributeName=id,AttributeType=S \
+        --key-schema AttributeName=id,KeyType=HASH \
         --provisioned-throughput ReadCapacityUnits=5,WriteCapacityUnits=5
 }
 
@@ -82,34 +82,36 @@ function bucket()
     fi
 }
 
-if [[ ! -z $1 ]] || [[ "$1" != "" ]]; then
-    if [[ "$1" == "db" ]]; then
-        justDB
-        exit
-    fi
-fi
-
-removeFiles
-build
-bucket
-
-
-STACK_EXISTS=$(awslocal cloudformation list-stacks --stack-status-filter ROLLBACK_COMPLETE UPDATE_ROLLBACK_COMPLETE | jq '.StackSummaries[].StackName//empty' | grep "${STACK_NAME}")
-if [[ -z "${STACK_EXISTS}" ]] || [[ "${STACK_EXISTS}" == "" ]]; then
-    createStack
-else
-    STACK_ROLLBACK=$(awslocal cloudformation list-stacks --stack-status-filter ROLLBACK_COMPLETE | jq '.StackSummaries[].StackName//empty' | grep "${STACK_NAME}")
-    if [[ -z "${STACK_ROLLBACK}" ]] || [[ "${STACK_ROLLBACK}" == "" ]]; then
-        updateStack
-    else
-        deleteStack
+function cloudFormation()
+{
+    STACK_EXISTS=$(awslocal cloudformation list-stacks --stack-status-filter ROLLBACK_COMPLETE UPDATE_ROLLBACK_COMPLETE | jq '.StackSummaries[].StackName//empty' | grep "${STACK_NAME}")
+    if [[ -z "${STACK_EXISTS}" ]] || [[ "${STACK_EXISTS}" == "" ]]; then
         createStack
+    else
+        STACK_ROLLBACK=$(awslocal cloudformation list-stacks --stack-status-filter ROLLBACK_COMPLETE | jq '.StackSummaries[].StackName//empty' | grep "${STACK_NAME}")
+        if [[ -z "${STACK_ROLLBACK}" ]] || [[ "${STACK_ROLLBACK}" == "" ]]; then
+            updateStack
+        else
+            deleteStack
+            createStack
+        fi
     fi
+}
+
+function testIt()
+{
+    go test ./...
+    go test ./... -bench=. -run=$$$
+}
+
+
+if [[ ! -z ${1} ]] || [[ "${1}" != "" ]]; then
+    ${1}
+else
+    removeFiles
+    build
+    bucket
+    cloudFormation
+    removeFiles
 fi
-
-go test ./...
-go test ./... -bench=. -run=$$$
-
-removeFiles
-
 
