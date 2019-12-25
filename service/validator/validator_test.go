@@ -89,10 +89,12 @@ func deleteAgent(id string) error {
 }
 
 func TestAgentId(t *testing.T) {
-	err := godotenv.Load()
-	if err != nil {
-		t.Errorf("godotenv err: %w", err)
-	}
+    if os.Getenv("GITHUB_ACTOR") == "" {
+        err := godotenv.Load()
+        if err != nil {
+            t.Errorf("godotenv err: %w", err)
+        }
+    }
 
 	tests := []struct {
 		name    string
@@ -125,7 +127,7 @@ func TestAgentId(t *testing.T) {
 
 	injErr := injectAgent(tests[0].request)
 	if injErr != nil {
-		t.Errorf("injection err: %w", err)
+		t.Errorf("injection err: %w", injErr)
 	}
 
 	for _, test := range tests {
@@ -149,7 +151,7 @@ func TestAgentId(t *testing.T) {
 
 	delErr := deleteAgent(tests[0].request.ID)
 	if delErr != nil {
-		t.Errorf("delete err: %w", err)
+		t.Errorf("delete err: %w", delErr)
 	}
 }
 
@@ -180,7 +182,7 @@ func TestLookupAgentId(t *testing.T) {
 
 	injErr := injectAgent(tests[0].request)
 	if injErr != nil {
-		t.Errorf("injection err: %w", err)
+		t.Errorf("injection err: %w", injErr)
 	}
 
 	for _, test := range tests {
@@ -199,7 +201,7 @@ func TestLookupAgentId(t *testing.T) {
 
 	delErr := deleteAgent(tests[0].request.ID)
 	if delErr != nil {
-		t.Errorf("delete err: %w", err)
+		t.Errorf("delete err: %w", delErr)
 	}
 }
 

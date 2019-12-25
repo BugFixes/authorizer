@@ -55,6 +55,7 @@ func injectAgent(data AgentData) error {
 			"#ID": aws.String("id"),
 		},
 	}
+
 	_, err = svc.PutItem(input)
 	if err != nil {
 		if aerr, ok := err.(awserr.Error); ok {
@@ -98,10 +99,12 @@ func deleteAgent(id string) error {
 }
 
 func TestHandler(t *testing.T) {
-	err := godotenv.Load()
-	if err != nil {
-		t.Errorf("godotenv err: %w", err)
-	}
+    if os.Getenv("GITHUB_ACTOR") == "" {
+        err := godotenv.Load()
+        if err != nil {
+            t.Errorf("godotenv err: %w", err)
+        }
+    }
 
 	tests := []struct {
 		name    string
@@ -259,7 +262,7 @@ func TestHandler(t *testing.T) {
 			// inject key
 			injErr := injectAgent(test.agent)
 			if injErr != nil {
-				t.Errorf("inject err: %w", err)
+				t.Errorf("inject err: %w", injErr)
 			}
 
 			// do the test
@@ -276,7 +279,7 @@ func TestHandler(t *testing.T) {
 			// delete the tester key
 			delErr := deleteAgent(test.agent.ID)
 			if delErr != nil {
-				t.Errorf("delete err: %w", err)
+				t.Errorf("delete err: %w", delErr)
 			}
 		})
 	}

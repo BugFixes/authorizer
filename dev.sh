@@ -2,6 +2,7 @@
 
 STACK_NAME=authorizer
 BUILD_BUCKET=builds
+TABLE_NAME=authorizer-dynamo-dev
 
 export AWS_DEFAULT_REGION=us-east-1
 
@@ -56,16 +57,21 @@ function deleteStack()
 function justDB()
 {
     echo "justDB"
-    awslocal dynamodb delete-table \
-        --table-name authorizer-dynamo-dev \
-        --endpoint-url http://0.0.0.0:4569
+    dbExists=$(aws dynamodb list-tables --endpoint-url http://0.0.0.0:4569 --region eu-west-2 | jq '.TableNames[0]' | grep "${TABLE_NAME}")
+    if [[ ! -z ${dbExists} ]] || [[ "${dbExists}" != "" ]]; then
+        aws dynamodb delete-table \
+            --table-name ${TABLE_NAME} \
+            --endpoint-url http://0.0.0.0:4569 \
+            --region eu-west-2
+    fi
 
-    awslocal dynamodb create-table \
-        --table-name authorizer-dynamo-dev \
+    aws dynamodb create-table \
+        --table-name ${TABLE_NAME} \
         --attribute-definitions AttributeName=id,AttributeType=S \
         --key-schema AttributeName=id,KeyType=HASH \
         --provisioned-throughput ReadCapacityUnits=5,WriteCapacityUnits=5 \
-        --endpoint-url http://0.0.0.0:4569
+        --endpoint-url http://0.0.0.0:4569 \
+        --region eu-west-2
 }
 
 function build()
