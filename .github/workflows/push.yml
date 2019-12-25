@@ -42,7 +42,7 @@ jobs:
               run: |
                 pip install wheel setuptools --upgrade
                 pip install awscli-local --upgrade
-                docker run -p 4589:8000 -d amazon/dynamodb-local
+                docker run -p 4569:8000 -d amazon/dynamodb-local
             - name: create database
               env:
                 AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
