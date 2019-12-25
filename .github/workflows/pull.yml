@@ -1,4 +1,18 @@
-name: Tester
+name: Pull Request
+on:
+    pull_request:
+        types:
+            - labeled
+            - unlabeled
+            - synchronize
+            - opened
+            - edited
+            - ready_for_review
+            - reopened
+            - unlocked
+    check_suite:
+        types:
+            - completed
 
 jobs:
     lint:
@@ -51,3 +65,10 @@ jobs:
                   DB_REGION: eu-west-2
                   DB_ENDPOINT: http://0.0.0.0:4569
               run: ./dev.sh testIt
+    automerge:
+        needs: test
+        runs-on: ubuntu-latest
+        steps:
+            - uses: ridedott/dependabot-auto-merge-action@v1.0.11
+              with:
+                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
