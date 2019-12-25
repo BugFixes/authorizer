@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-BUILD_BUCKET=bugfixes-builds
+BUILD_BUCKET=bugfixes-builds-eu
 STACK_NAME=authorizer
 
 function build()
