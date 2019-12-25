@@ -7,4 +7,5 @@ on:
 
 jobs:
     test:
-        uses: './.github/actions/test'
+        steps:
+            - uses: './.github/actions/test'
