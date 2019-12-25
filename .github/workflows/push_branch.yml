@@ -1,0 +1,56 @@
+#name: Master Pusher
+#jobs:
+#    lint:
+#        runs-on: ubuntu-latest
+#        steps:
+#            - name: install go
+#              uses: actions/setup-go@v1
+#              with:
+#                go-version: 1.13.x
+#            - name: checkout
+#              uses: actions/checkout@v1
+#              with:
+#                fetch-depth: 1
+#            - name: install golangci-lint
+#              run: curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.21.0
+#            - name: lint
+#              run: $(go env GOPATH)/bin/golangci-lint run
+#
+#    test:
+#        needs: lint
+#        runs-on: ubuntu-latest
+#        steps:
+#            - uses: actions/setup-go@v1
+#              with:
+#                go-version: 1.13.x
+#            - uses: actions/checkout@v1
+#              with:
+#                fetch-depth: 1
+#            - name: dynamodb docker
+#              run: docker pull amazon/dynamodb-local
+#            - uses: actions/setup-python@v1
+#              with:
+#                python-version: 3.x
+#            - name: install test dependencies
+#              env:
+#                AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+#                AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+#              run: |
+#                pip install wheel setuptools --upgrade
+#                pip install awscli-local --upgrade
+#                docker run -p 4569:8000 -d amazon/dynamodb-local
+#            - name: create database
+#              env:
+#                AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+#                AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+#              run: ./dev.sh justDB
+#            - name: run tests
+#              env:
+#                  AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+#                  AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+#                  DB_TABLE: authorizer-dynamo-dev
+#                  DB_REGION: eu-west-2
+#                  DB_ENDPOINT: http://0.0.0.0:4569
+#              run: ./dev.sh testIt
+#
+#

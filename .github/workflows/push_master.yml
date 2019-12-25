@@ -35,26 +35,22 @@ jobs:
             - uses: actions/setup-python@v1
               with:
                 python-version: 3.x
+            - name: aws-creds
+              uss: aws-actions/configure-aws-credentials@v1
+              with:
+                  aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+                  aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+                  aws-region: eu-west-2
             - name: install test dependencies
-              env:
-                AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-                AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
               run: |
                 pip install wheel setuptools --upgrade
                 pip install awscli-local --upgrade
                 docker run -p 4569:8000 -d amazon/dynamodb-local
             - name: create database
-              env:
-                AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-                AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
               run: ./dev.sh justDB
             - name: run tests
               env:
-                  AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-                  AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
                   DB_TABLE: authorizer-dynamo-dev
                   DB_REGION: eu-west-2
                   DB_ENDPOINT: http://0.0.0.0:4569
               run: ./dev.sh testIt
-
-
