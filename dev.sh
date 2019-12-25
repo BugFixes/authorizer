@@ -57,13 +57,15 @@ function justDB()
 {
     echo "justDB"
     awslocal dynamodb delete-table \
-        --table-name authorizer-dynamo-dev
+        --table-name authorizer-dynamo-dev \
+        --endpoint-url http://0.0.0.0:4569
 
     awslocal dynamodb create-table \
         --table-name authorizer-dynamo-dev \
         --attribute-definitions AttributeName=id,AttributeType=S \
         --key-schema AttributeName=id,KeyType=HASH \
-        --provisioned-throughput ReadCapacityUnits=5,WriteCapacityUnits=5
+        --provisioned-throughput ReadCapacityUnits=5,WriteCapacityUnits=5 \
+        --endpoint-url http://0.0.0.0:4569
 }
 
 function build()
