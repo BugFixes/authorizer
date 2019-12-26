@@ -55,12 +55,15 @@ build
 
 STACK_EXISTS=$(aws cloudformation list-stacks --stack-status-filter ROLLBACK_COMPLETE UPDATE_ROLLBACK_COMPLETE | jq '.StackSummaries[].StackName//empty' | grep "${STACK_NAME}")
 if [[ -z ${STACK_EXISTS} ]] || [[ "${STACK_EXISTS}" == "" ]]; then
+    echo "No Stack"
     createStack
 else
     STACK_ROLLBACK=$(aws cloudformation list-stacks --stack-status-filter ROLLBACK_COMPLETE | jq '.StackSummaries[].StackName//empty' | grep "${STACK_NAME}")
     if [[ -z ${STACK_ROLLBACK} ]] || [[ "${STACK_ROLLBACK}" == "" ]]; then
+        echo "Good standing"
         updateStack
     else
+        echo "Failed Stack"
         deleteStack
         sleep 60
         createStack
