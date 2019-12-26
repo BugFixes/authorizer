@@ -2,7 +2,7 @@
 
 BUILD_BUCKET=bugfixes-builds-eu
 STACK_NAME=authorizer
-TABLE_NAME=authorizer
+TABLE_NAME=authorizer-dynamo-dev
 
 function build()
 {
@@ -53,8 +53,8 @@ function deleteStack()
 
 function testCode()
 {
-    AWS_DEFAULT_REGION=eu-west-2 go test ./...
-    AWS_DEFAULT_REGION=eu-west-2 go test ./... -bench=. -run=$$$
+    AWS_DEFAULT_REGION=eu-west-2 DB_TABLE=${TABLE_NAME} go test ./...
+    AWS_DEFAULT_REGION=eu-west-2 DB_TABLE=${TABLE_NAME} go test ./... -bench=. -run=$$$
 }
 
 function testDatabase()
