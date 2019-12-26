@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 STACK_NAME=authorizer
-BUILD_BUCKET=builds
+BUILD_BUCKET=bugfixes-builds-eu
 TABLE_NAME=authorizer-dynamo-dev
 
 export AWS_DEFAULT_REGION=us-east-1
@@ -28,8 +28,7 @@ function createStack()
 		    ParameterKey=ServiceName,ParameterValue=${STACK_NAME} \
 		    ParameterKey=Environment,ParameterValue=dev \
 		    ParameterKey=BuildBucket,ParameterValue=${BUILD_BUCKET} \
-		    ParameterKey=BuildKey,ParameterValue=${STACK_NAME}.zip \
-		    ParameterKey=DBEndpoint,ParameterValue=http://localhost:4569
+		    ParameterKey=BuildKey,ParameterValue=${STACK_NAME}.zip
 }
 
 function updateStack()
@@ -44,8 +43,7 @@ function updateStack()
 		    ParameterKey=ServiceName,ParameterValue=${STACK_NAME} \
 		    ParameterKey=Environment,ParameterValue=dev \
 		    ParameterKey=BuildBucket,ParameterValue=${BUILD_BUCKET} \
-		    ParameterKey=BuildKey,ParameterValue=${STACK_NAME}.zip \
-		    ParameterKey=DBEndpoint,ParameterValue=http://localhost:4569
+		    ParameterKey=BuildKey,ParameterValue=${STACK_NAME}.zip
 }
 
 function deleteStack()
@@ -57,21 +55,17 @@ function deleteStack()
 function testDatabase()
 {
     echo "testDatabase"
-    dbExists=$(aws dynamodb list-tables --endpoint-url http://0.0.0.0:4569 --region eu-west-2 | jq '.TableNames[0]' | grep "${TABLE_NAME}")
+    dbExists=$(awslocal dynamodb list-tables | jq '.TableNames[0]' | grep "${TABLE_NAME}")
     if [[ ! -z ${dbExists} ]] || [[ "${dbExists}" != "" ]]; then
-        aws dynamodb delete-table \
-            --table-name ${TABLE_NAME} \
-            --endpoint-url http://0.0.0.0:4569 \
-            --region eu-west-2
+        awslocal dynamodb delete-table \
+            --table-name ${TABLE_NAME}
     fi
 
-    aws dynamodb create-table \
+    awslocal dynamodb create-table \
         --table-name ${TABLE_NAME} \
         --attribute-definitions AttributeName=id,AttributeType=S \
         --key-schema AttributeName=id,KeyType=HASH \
-        --provisioned-throughput ReadCapacityUnits=5,WriteCapacityUnits=5 \
-        --endpoint-url http://0.0.0.0:4569 \
-        --region eu-west-2
+        --provisioned-throughput ReadCapacityUnits=5,WriteCapacityUnits=5
 }
 
 function build()
@@ -92,7 +86,7 @@ function bucket()
 
 function cloudFormation()
 {
-    STACK_EXISTS=$(awslocal cloudformation list-stacks --stack-status-filter ROLLBACK_COMPLETE UPDATE_ROLLBACK_COMPLETE | jq '.StackSummaries[].StackName//empty' | grep "${STACK_NAME}")
+    STACK_EXISTS=$(awslocal cloudformation list-stacks --stack-status-filter ROLLBACK_COMPLETE UPDATE_ROLLBACK_COMPLETE CREATE_COMPLETE | jq '.StackSummaries[].StackName//empty' | grep "${STACK_NAME}")
     if [[ -z "${STACK_EXISTS}" ]] || [[ "${STACK_EXISTS}" == "" ]]; then
         createStack
     else
