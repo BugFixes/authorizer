@@ -54,9 +54,9 @@ function deleteStack()
     awslocal cloudformation delete-stack --stack-name ${STACK_NAME}
 }
 
-function justDB()
+function testDatabase()
 {
-    echo "justDB"
+    echo "testDatabase"
     dbExists=$(aws dynamodb list-tables --endpoint-url http://0.0.0.0:4569 --region eu-west-2 | jq '.TableNames[0]' | grep "${TABLE_NAME}")
     if [[ ! -z ${dbExists} ]] || [[ "${dbExists}" != "" ]]; then
         aws dynamodb delete-table \
@@ -106,7 +106,7 @@ function cloudFormation()
     fi
 }
 
-function testIt()
+function testCode()
 {
     go test ./...
     go test ./... -bench=. -run=$$$
@@ -118,6 +118,7 @@ if [[ ! -z ${1} ]] || [[ "${1}" != "" ]]; then
 else
     removeFiles
     build
+    testCode
     bucket
     cloudFormation
     removeFiles

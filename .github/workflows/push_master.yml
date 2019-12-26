@@ -45,13 +45,13 @@ jobs:
           pip install awscli-local --upgrade
           docker run -p 4569:8000 -d amazon/dynamodb-local
       - name: create database
-        run: ./dev.sh justDB
+        run: ./cloud.sh testDatabase
       - name: run tests
         env:
           DB_TABLE: authorizer-dynamo-dev
           DB_REGION: eu-west-2
           DB_ENDPOINT: http://0.0.0.0:4569
-        run: ./dev.sh testIt
+        run: ./cloud.sh testCode
 
   push:
     needs: test
