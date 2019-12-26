@@ -53,8 +53,11 @@ function deleteStack()
 
 function testCode()
 {
-    AWS_DEFAULT_REGION=eu-west-2 DB_TABLE=${TABLE_NAME} go test ./...
-    AWS_DEFAULT_REGION=eu-west-2 DB_TABLE=${TABLE_NAME} go test ./... -bench=. -run=$$$
+    TEST_CODE=true AWS_DEFAULT_REGION=eu-west-2 DB_TABLE=${TABLE_NAME} go test ./...
+    echo "----"
+    echo "---- Benchmarks ----"
+    echo "----"
+    TEST_CODE=true AWS_DEFAULT_REGION=eu-west-2 DB_TABLE=${TABLE_NAME} go test ./... -bench=. -run=$$$
 }
 
 function testDatabase()

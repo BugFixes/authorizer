@@ -165,13 +165,13 @@ func BenchmarkGenerateAllow(b *testing.B) {
 
 	b.ResetTimer()
 	for _, test := range tests {
-		b.StopTimer()
+		b.StartTimer()
 
 		resp := policy.GenerateAllow(test.request)
 		assert.IsType(b, test.expect, resp)
 		assert.Equal(b, test.expect, resp)
 
-		b.StartTimer()
+		b.StopTimer()
 	}
 }
 
@@ -218,12 +218,12 @@ func BenchmarkGenerateDeny(b *testing.B) {
 
 	b.ResetTimer()
 	for _, test := range tests {
-		b.StopTimer()
+		b.StartTimer()
 
 		resp := policy.GenerateDeny(test.request)
 		assert.IsType(b, test.expect, resp)
 		assert.Equal(b, test.expect, resp)
 
-		b.StartTimer()
+		b.StopTimer()
 	}
 }

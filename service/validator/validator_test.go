@@ -207,65 +207,134 @@ func TestLookupAgentId(t *testing.T) {
 	}
 }
 
-//func BenchmarkKey(b *testing.B) {
-//	b.ReportAllocs()
-//
-//	err := godotenv.Load()
-//	if err != nil {
-//		b.Errorf("godotenv err: %w", err)
-//	}
-//
-//	type request struct {
-//		key         string
-//		expires     time.Time
-//		service     string
-//		serviceTest string
-//	}
-//
-//	tests := []struct {
-//		request
-//		expect bool
-//	}{
-//		{
-//			request: request{
-//				key:         "tester-69e668a5-b11f-405b-ae8a-e0eb3e6f371a",
-//				expires:     time.Now().Add(10 * time.Minute),
-//				service:     "tester",
-//				serviceTest: "tester",
-//			},
-//			expect: true,
-//		},
-//		{
-//			request: request{
-//				key:         "tester-69e668a5-b11f-405b-ae8a-e0eb3e6f371a",
-//				expires:     time.Now().Add(-10 * time.Minute),
-//				service:     "tester",
-//				serviceTest: "tester",
-//			},
-//		},
-//		{
-//			request: request{
-//				key:         "tester-69e668a5-b11f-405b-ae8a-e0eb3e6f371a",
-//				expires:     time.Now().Add(10 * time.Minute),
-//				service:     "tester",
-//				serviceTest: "somethingelse",
-//			},
-//		},
-//	}
-//
-//	b.ResetTimer()
-//	for _, test := range tests {
-//		b.StopTimer()
-//
-//		_ = injectKey(test.key, test.expires, test.service)
-//
-//		resp := validator.Key(test.key, test.serviceTest)
-//		assert.IsType(b, test.expect, resp)
-//		assert.Equal(b, test.expect, resp)
-//
-//		_ = deleteKey(test.key)
-//
-//		b.StartTimer()
-//
-//	}
-//}
+func BenchmarkLookupAgentId(b *testing.B) {
+	b.ReportAllocs()
+
+  if os.Getenv("GITHUB_ACTOR") == "" {
+    err := godotenv.Load()
+    if err != nil {
+      b.Errorf("godotenv err: %w", err)
+    }
+  }
+
+  tests := []struct {
+    name    string
+    request validator.AgentData
+    expect  string
+    err     error
+  }{
+    {
+      name: "agentid found",
+      request: validator.AgentData{
+        ID:        "ad4b99e1-dec8-4682-862a-6b017e7c7c72",
+        Key:       "94365b00-c6df-483f-804e-363312750500",
+        Secret:    "f7356946-5814-4b5e-ad45-0348a89576ef",
+        CompanyID: "b9e9153a-028c-4173-a7a8-e5063334416a",
+        Name:      "bugfixes test frontend",
+      },
+      expect: "ad4b99e1-dec8-4682-862a-6b017e7c7c72",
+    },
+  }
+
+  injErr := injectAgent(tests[0].request)
+  if injErr != nil {
+    b.Errorf("injection err: %w", injErr)
+  }
+
+  b.ResetTimer()
+
+  for _, test := range tests {
+    b.Run(test.name, func(t *testing.B) {
+      t.StartTimer()
+      resp, err := validator.LookupAgentId(test.request.Key, test.request.Secret)
+      passed := assert.IsType(t, test.err, err)
+      if !passed {
+        t.Errorf("validator err: %w", err)
+      }
+      passed = assert.Equal(t, test.expect, resp)
+      if !passed {
+        t.Errorf("validator equal: %v, resp: %v", test.expect, resp)
+      }
+      t.StopTimer()
+    })
+  }
+
+  delErr := deleteAgent(tests[0].request.ID)
+  if delErr != nil {
+    b.Errorf("delete err: %w", delErr)
+  }
+}
+
+func BenchmarkAgentId(b *testing.B) {
+  b.ReportAllocs()
+
+  if os.Getenv("GITHUB_ACTOR") == "" {
+    err := godotenv.Load()
+    if err != nil {
+      b.Errorf("godotenv err: %w", err)
+    }
+  }
+
+  tests := []struct {
+    name    string
+    request validator.AgentData
+    expect  bool
+    err     error
+  }{
+    {
+      name: "agentid valid",
+      request: validator.AgentData{
+        ID:        "ad4b99e1-dec8-4682-862a-6b017e7c7c74",
+        Key:       "94365b00-c6df-483f-804e-363312750500",
+        Secret:    "f7356946-5814-4b5e-ad45-0348a89576ef",
+        CompanyID: "b9e9153a-028c-4173-a7a8-e5063334416a",
+        Name:      "bugfixes test frontend",
+      },
+      expect: true,
+    },
+    {
+      name: "agentid invalid",
+      request: validator.AgentData{
+        ID:        "ad4b99e1-dec8-4682-862a-6b017e7c7c75",
+        Key:       "94365b00-c6df-483f-804e-363312750500",
+        Secret:    "f7356946-5814-4b5e-ad45-0348a89576ef",
+        CompanyID: "b9e9153a-028c-4173-a7a8-e5063334416a",
+        Name:      "bugfixes test frontend",
+      },
+    },
+  }
+
+  injErr := injectAgent(tests[0].request)
+  if injErr != nil {
+    b.Errorf("injection err: %w", injErr)
+  }
+
+  b.ResetTimer()
+
+  for _, test := range tests {
+    b.Run(test.name, func(t *testing.B) {
+      t.StartTimer()
+
+      resp, err := validator.AgentId(test.request.ID)
+      passed := assert.IsType(t, test.err, err)
+      if !passed {
+        t.Errorf("validator err: %w", err)
+      }
+      passed = assert.IsType(t, test.expect, resp)
+      if !passed {
+        t.Errorf("validator type test failed: %+v", test.expect)
+      }
+      passed = assert.Equal(t, test.expect, resp)
+      if !passed {
+        t.Errorf("validator equal test failed: %+v, resp: %+v", test.expect, resp)
+      }
+
+      t.StopTimer()
+    })
+  }
+
+  delErr := deleteAgent(tests[0].request.ID)
+  if delErr != nil {
+    b.Errorf("delete err: %w", delErr)
+  }
+}

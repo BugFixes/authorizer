@@ -2,7 +2,8 @@ package service
 
 import (
 	"fmt"
-	"strings"
+  "os"
+  "strings"
 
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/bugfixes/authorizer/service/policy"
@@ -58,12 +59,16 @@ func Handler(event events.APIGatewayCustomAuthorizerRequestTypeRequest) (events.
 	// test agentid
 	agentValid, err := validator.AgentId(agentId)
 	if err != nil {
-		fmt.Printf("Invalid Agent: %+v, err: %+v\n", newEvent, err)
+	  if os.Getenv("TEST_CODE") != "true" {
+      fmt.Printf("Invalid Agent: %+v, err: %+v\n", newEvent, err)
+    }
 		return policy.GenerateDeny(newEvent), nil
 	}
 
 	if !agentValid {
-		fmt.Printf("Deny Agent: %+v\n", newEvent)
+	  if os.Getenv("TEST_CODE") != "true" {
+      fmt.Printf("Deny Agent: %+v\n", newEvent)
+    }
 		return policy.GenerateDeny(newEvent), nil
 	}
 
