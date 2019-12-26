@@ -12,13 +12,13 @@ function build()
 
 function moveFile()
 {
+    echo "Move File"
     aws s3 cp ./${STACK_NAME}.zip s3://${BUILD_BUCKET}/${STACK_NAME}.zip
 }
 
 function createStack()
 {
     echo "CreateStack"
-    moveFile
     aws cloudformation create-stack \
 	    --template-body file://cf.yaml \
 	    --stack-name ${STACK_NAME} \
@@ -33,7 +33,6 @@ function createStack()
 function updateStack()
 {
     echo "UpdateStack"
-    moveFile
     aws cloudformation update-stack \
 	    --template-body file://cf.yaml \
 	    --stack-name ${STACK_NAME} \
@@ -52,8 +51,9 @@ function deleteStack()
 }
 
 build
+moveFile
 
-STACK_EXISTS=$(aws cloudformation list-stacks --stack-status-filter ROLLBACK_COMPLETE UPDATE_ROLLBACK_COMPLETE | jq '.StackSummaries[].StackName//empty' | grep "${STACK_NAME}")
+STACK_EXISTS=$(aws cloudformation list-stacks --region eu-west-2 --stack-status-filter ROLLBACK_COMPLETE UPDATE_ROLLBACK_COMPLETE | jq '.StackSummaries[].StackName//empty' | grep "${STACK_NAME}")
 if [[ -z ${STACK_EXISTS} ]] || [[ "${STACK_EXISTS}" == "" ]]; then
     echo "No Stack"
     createStack
