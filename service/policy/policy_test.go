@@ -1,8 +1,8 @@
 package policy_test
 
 import (
-    "os"
-    "testing"
+	"os"
+	"testing"
 
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/bugfixes/authorizer/service/policy"
@@ -11,12 +11,12 @@ import (
 )
 
 func TestGenerateAllow(t *testing.T) {
-    if os.Getenv("GITHUB_ACTOR") == "" {
-        err := godotenv.Load()
-        if err != nil {
-            t.Errorf("godotenv err: %w", err)
-        }
-    }
+	if os.Getenv("GITHUB_ACTOR") == "" {
+		err := godotenv.Load()
+		if err != nil {
+			t.Errorf("godotenv err: %w", err)
+		}
+	}
 
 	tests := []struct {
 		name    string
@@ -67,12 +67,12 @@ func TestGenerateAllow(t *testing.T) {
 }
 
 func TestGenerateDeny(t *testing.T) {
-    if os.Getenv("GITHUB_ACTOR") == "" {
-        err := godotenv.Load()
-        if err != nil {
-            t.Errorf("godotenv err: %w", err)
-        }
-    }
+	if os.Getenv("GITHUB_ACTOR") == "" {
+		err := godotenv.Load()
+		if err != nil {
+			t.Errorf("godotenv err: %w", err)
+		}
+	}
 
 	tests := []struct {
 		name    string
@@ -125,12 +125,12 @@ func TestGenerateDeny(t *testing.T) {
 func BenchmarkGenerateAllow(b *testing.B) {
 	b.ReportAllocs()
 
-    if os.Getenv("GITHUB_ACTOR") == "" {
-        err := godotenv.Load()
-        if err != nil {
-            b.Errorf("godotenv err: %w", err)
-        }
-    }
+	if os.Getenv("GITHUB_ACTOR") == "" {
+		err := godotenv.Load()
+		if err != nil {
+			b.Errorf("godotenv err: %w", err)
+		}
+	}
 
 	tests := []struct {
 		request events.APIGatewayCustomAuthorizerRequest
@@ -178,12 +178,12 @@ func BenchmarkGenerateAllow(b *testing.B) {
 func BenchmarkGenerateDeny(b *testing.B) {
 	b.ReportAllocs()
 
-    if os.Getenv("GITHUB_ACTOR") == "" {
-        err := godotenv.Load()
-        if err != nil {
-            b.Errorf("godotenv err: %w", err)
-        }
-    }
+	if os.Getenv("GITHUB_ACTOR") == "" {
+		err := godotenv.Load()
+		if err != nil {
+			b.Errorf("godotenv err: %w", err)
+		}
+	}
 
 	tests := []struct {
 		request events.APIGatewayCustomAuthorizerRequest

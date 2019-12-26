@@ -99,12 +99,12 @@ func deleteAgent(id string) error {
 }
 
 func TestHandler(t *testing.T) {
-    if os.Getenv("GITHUB_ACTOR") == "" {
-        err := godotenv.Load()
-        if err != nil {
-            t.Errorf("godotenv err: %w", err)
-        }
-    }
+	if os.Getenv("GITHUB_ACTOR") == "" {
+		err := godotenv.Load()
+		if err != nil {
+			t.Errorf("godotenv err: %w", err)
+		}
+	}
 
 	tests := []struct {
 		name    string
