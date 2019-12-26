@@ -54,14 +54,15 @@ function deleteStack()
 build
 
 STACK_EXISTS=$(aws cloudformation list-stacks --stack-status-filter ROLLBACK_COMPLETE UPDATE_ROLLBACK_COMPLETE | jq '.StackSummaries[].StackName//empty' | grep "${STACK_NAME}")
-if [[ -z "${STACK_EXISTS}" ]] || [[ "${STACK_EXISTS}" == "" ]]; then
+if [[ -z ${STACK_EXISTS} ]] || [[ "${STACK_EXISTS}" == "" ]]; then
     createStack
 else
     STACK_ROLLBACK=$(aws cloudformation list-stacks --stack-status-filter ROLLBACK_COMPLETE | jq '.StackSummaries[].StackName//empty' | grep "${STACK_NAME}")
-    if [[ -z "${STACK_ROLLBACK}" ]] || [[ "${STACK_ROLLBACK}" == "" ]]; then
+    if [[ -z ${STACK_ROLLBACK} ]] || [[ "${STACK_ROLLBACK}" == "" ]]; then
         updateStack
     else
         deleteStack
+        sleep 60
         createStack
     fi
 fi
