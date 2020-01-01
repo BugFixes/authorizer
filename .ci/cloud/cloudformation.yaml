@@ -49,8 +49,9 @@ Resources:
                   - logs:PutLogEvents
                 Resource: '*'
               - Effect: Allow
-                Action: rds:*
-                Resource: !Join ['', ['arn', 'aws', 'rds', !Ref AWS::Region, !Ref AWS::AccountId, 'bugfixes']]
+                Action:
+                  - rds:*
+                Resource: !Join ['', ['arn', 'aws', 'rds', !Ref 'AWS::Region', !Ref 'AWS::AccountId', 'bugfixes']]
               - Effect: Allow
                 Resource: '*'
                 Action:
