@@ -2,7 +2,6 @@
 
 BUILD_BUCKET=bugfixes-builds-eu
 STACK_NAME=authorizer
-TABLE_NAME=authorizer-dynamo-dev
 
 function build()
 {
