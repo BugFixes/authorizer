@@ -39,6 +39,14 @@ func Handler(event events.APIGatewayCustomAuthorizerRequestTypeRequest) (events.
 		if err != nil {
 			fmt.Printf("Seriouslly how the fuck is it not nil\n")
 		}
+		if len(agentAPIKey) == 0 || len(agentAPISecret) == 0 {
+		  fmt.Printf("no agent, key, or secret")
+		  return policy.GenerateDeny(events.APIGatewayCustomAuthorizerRequest{
+        Type:               event.Type,
+        AuthorizationToken: agentId,
+        MethodArn:          event.MethodArn,
+      }), nil
+    }
 		agentId, err = validator.LookupAgentId(agentAPIKey, agentAPISecret)
 		if err != nil {
 			fmt.Printf("Invalid AgentId: %+v, key: %s, secret: %s, err: %+v\n", err, agentAPISecret, agentAPIKey, err)
