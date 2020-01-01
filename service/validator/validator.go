@@ -1,13 +1,11 @@
 package validator
 
 import (
-	"fmt"
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/dynamodb"
-	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbattribute"
-	"github.com/aws/aws-sdk-go/service/dynamodb/expression"
-	"os"
+  "database/sql"
+  "fmt"
+  "os"
+
+  _ "github.com/lib/pq"
 )
 
 type AgentData struct {
@@ -19,80 +17,71 @@ type AgentData struct {
 }
 
 func LookupAgentId(key, secret string) (string, error) {
-	s, err := session.NewSession(&aws.Config{
-		Region:   aws.String(os.Getenv("DB_REGION")),
-		Endpoint: aws.String(os.Getenv("DB_ENDPOINT")),
-	})
-	if err != nil {
-		return "", fmt.Errorf("lookupAgent sesson: %w", err)
-	}
+  agentId := ""
 
-	keyFilter := expression.Name("key").Equal(expression.Value(aws.String(key)))
-	secretFilter := expression.Name("secret").Equal(expression.Value(aws.String(secret)))
-	proj := expression.NamesList(expression.Name("id"), expression.Name("key"), expression.Name("secret"), expression.Name("companyId"))
-	expr, err := expression.NewBuilder().WithFilter(keyFilter.And(secretFilter)).WithProjection(proj).Build()
-	if err != nil {
-		return "", fmt.Errorf("lookupAgent expression: %w", err)
-	}
+  db, err := sql.Open(
+    "postgres",
+    fmt.Sprintf(
+      "host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
+      os.Getenv("DB_HOSTNAME"),
+      os.Getenv("DB_PORT"),
+      os.Getenv("DB_USERNAME"),
+      os.Getenv("DB_PASSWORD"),
+      os.Getenv("DB_DATABASE")))
+  if err != nil {
+    return agentId, fmt.Errorf("LoopkupAgentId db.open: %w", err)
+  }
+  defer func() {
+    err := db.Close()
+    if err != nil {
+      fmt.Printf("LoopkupAgentId db.close: %v", err)
+    }
+  }()
+  row := db.QueryRow("SELECT id FROM agent WHERE key=$1 AND secret=$2", key, secret)
+  err = row.Scan(&agentId)
+  if err != nil {
+    switch err {
+    case sql.ErrNoRows:
+      return agentId, fmt.Errorf("LookupAgentId no rows")
+    default:
+      return agentId, fmt.Errorf("LookupAgentId db.query: %w", err)
+    }
+  }
 
-	result, err := dynamodb.New(s).Scan(&dynamodb.ScanInput{
-		ExpressionAttributeNames:  expr.Names(),
-		ExpressionAttributeValues: expr.Values(),
-		FilterExpression:          expr.Filter(),
-		ProjectionExpression:      expr.Projection(),
-		TableName:                 aws.String(os.Getenv("DB_TABLE")),
-	})
-	if err != nil {
-		return "", fmt.Errorf("lookupAgent scanItem: %w", err)
-	}
-
-	if len(result.Items) >= 1 {
-		ad := AgentData{}
-		unMapErr := dynamodbattribute.UnmarshalMap(result.Items[0], &ad)
-		if unMapErr != nil {
-			return "", fmt.Errorf("lookupAgent unmarshall: %w", err)
-		}
-
-		if ad.ID == "" {
-			return "", fmt.Errorf("unknown agentId")
-		}
-
-		return ad.ID, nil
-	}
-
-	return "", fmt.Errorf("no agents found")
+  return agentId, nil
 }
 
 func AgentId(agentId string) (bool, error) {
-	s, err := session.NewSession(&aws.Config{
-		Region:   aws.String(os.Getenv("DB_REGION")),
-		Endpoint: aws.String(os.Getenv("DB_ENDPOINT")),
-	})
-	if err != nil {
-		return false, fmt.Errorf("agentId session: %w", err)
-	}
+  agentFound := false
 
-	result, err := dynamodb.New(s).GetItem(&dynamodb.GetItemInput{
-		Key: map[string]*dynamodb.AttributeValue{
-			"id": {
-				S: aws.String(agentId),
-			},
-		},
-		TableName: aws.String(os.Getenv("DB_TABLE")),
-	})
-	if err != nil {
-		return false, fmt.Errorf("agentid: %w", err)
-	}
+  db, err := sql.Open(
+    "postgres",
+    fmt.Sprintf(
+      "host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
+      os.Getenv("DB_HOSTNAME"),
+      os.Getenv("DB_PORT"),
+      os.Getenv("DB_USERNAME"),
+      os.Getenv("DB_PASSWORD"),
+      os.Getenv("DB_DATABASE")))
+  if err != nil {
+    return agentFound, fmt.Errorf("AgentId db.open: %w", err)
+  }
+  defer func() {
+    err := db.Close()
+    if err != nil {
+      fmt.Printf("AgentId db.close: %v", err)
+    }
+  }()
+  row := db.QueryRow("SELECT true FROM agent WHERE id=$1", agentId)
+  err = row.Scan(&agentFound)
+  if err != nil {
+    switch err {
+    case sql.ErrNoRows:
+      return agentFound, fmt.Errorf("AgentId no rows")
+    default:
+      return agentFound, fmt.Errorf("AgentId db.query: %w", err)
+    }
+  }
 
-	ad := AgentData{}
-	unMapErr := dynamodbattribute.UnmarshalMap(result.Item, &ad)
-	if unMapErr != nil {
-		return false, fmt.Errorf("agentid unmarshall: %w", err)
-	}
-
-	if ad.ID == "" {
-		return false, nil
-	}
-
-	return true, nil
+  return agentFound, nil
 }

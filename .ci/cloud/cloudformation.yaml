@@ -10,28 +10,20 @@ Parameters:
     Type: String
   BuildKey:
     Type: String
-  AuthHeader:
+  DBHostname:
     Type: String
-    Default: 'X-Authorization'
-  AuthPrefix:
+  DBPort:
     Type: String
-    Default: 'bugfixes'
+  DBUsername:
+    Type: String
+  DBPassword:
+    Type: String
+  DBDatabase:
+    Type: String
+  DBTable:
+    Type: String
 
 Resources:
-  Dynamo:
-    Type: AWS::DynamoDB::Table
-    Properties:
-      TableName: !Join ['-', [!Ref ServiceName, dynamo, !Ref Environment]]
-      AttributeDefinitions:
-        - AttributeName: id
-          AttributeType: S
-      KeySchema:
-        - AttributeName: id
-          KeyType: HASH
-      ProvisionedThroughput:
-        WriteCapacityUnits: 5
-        ReadCapacityUnits: 5
-
   ServiceARN:
     Type: AWS::IAM::Role
     Properties:
@@ -57,19 +49,28 @@ Resources:
                   - logs:PutLogEvents
                 Resource: '*'
               - Effect: Allow
-                Action: dynamodb:*
-                Resource: !GetAtt Dynamo.Arn
+                Action: rds:*
+                Resource: !Join ['', ['arn', 'aws', 'rds', !Ref AWS::Region, !Ref AWS::AccountId, !Ref DBName]]
               - Effect: Allow
                 Resource: '*'
                 Action:
-                  - dynamodb:DescribeReservedCapacityOfferings
-                  - dynamodb:ListGlobalTables
-                  - dynamodb:ListTables
-                  - dynamodb:DescribeReservedCapacity
-                  - dynamodb:ListBackups
-                  - dynamodb:PurchaseReservedCapacityOfferings
-                  - dynamodb:DescribeLimits
-                  - dynamodb:ListStreams
+                  - rds:DescribeDBInstanceAutomatedBackups
+                  - rds:DescribeGlobalClustes
+                  - rds:DescribeEngineDefaultParameters
+                  - rds:DeleteDBInstanceAutomatedBackup
+                  - rds:DescribeReservedDBInstancesOfferings
+                  - rds:DescribeDBClusterSnapshots
+                  - rds:DescribeDBInstances
+                  - rds:DescribeOrderableDBInstanceOptions
+                  - rds:DescribeEngineDefaultClusterParameters
+                  - rds:DescribeSourceRegions
+                  - rds:CreateDBProxy
+                  - rds:DownloadCompleteDBLogFile
+                  - rds:DescribeDBClusterEndpoints
+                  - rds:DescribeCertificates
+                  - rds:DescribeEventCategories
+                  - rds:DescribeAccountAttribute
+
   Service:
     Type: AWS::Lambda::Function
     Properties:
@@ -79,11 +80,12 @@ Resources:
       Handler: !Ref ServiceName
       Environment:
         Variables:
-          DB_TABLE: !Ref Dynamo
-          DB_ENDPOINT: !Join ['', ['http://', 'dynamodb.', !Ref 'AWS::Region', '.amazonaws.com']]
-          AUTH_HEAD: !Ref AuthHeader
-          AUTH_PREF: !Ref AuthPrefix
-          DB_REGION: !Ref AWS::Region
+          DB_HOSTNAME: !Ref DBHostname
+          DB_PORT: !Ref DBPort
+          DB_USERNAME: !Ref DBUsername
+          DB_PASSWORD: !Ref DBPassword
+          DB_TABLE: !Ref DBTable
+          DB_DATABASE: !Ref DBDatabase
       Code:
         S3Bucket: !Ref BuildBucket
         S3Key: !Ref BuildKey

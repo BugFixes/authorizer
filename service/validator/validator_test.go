@@ -1,91 +1,75 @@
 package validator_test
 
 import (
+  "database/sql"
 	"fmt"
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/awserr"
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/dynamodb"
-	"github.com/bugfixes/authorizer/service/validator"
-	"github.com/joho/godotenv"
-	"github.com/stretchr/testify/assert"
-	"os"
+  "os"
 	"testing"
+
+  "github.com/bugfixes/authorizer/service/validator"
+  "github.com/joho/godotenv"
+  "github.com/stretchr/testify/assert"
+  _ "github.com/lib/pq"
 )
 
 func injectAgent(data validator.AgentData) error {
-	s, err := session.NewSession(&aws.Config{
-		Region:   aws.String(os.Getenv("DB_REGION")),
-		Endpoint: aws.String(os.Getenv("DB_ENDPOINT")),
-	})
-	if err != nil {
-		return err
-	}
-	svc := dynamodb.New(s)
-	input := &dynamodb.PutItemInput{
-		TableName: aws.String(os.Getenv("DB_TABLE")),
-		Item: map[string]*dynamodb.AttributeValue{
-			"id": {
-				S: aws.String(data.ID),
-			},
-			"key": {
-				S: aws.String(data.Key),
-			},
-			"secret": {
-				S: aws.String(data.Secret),
-			},
-			"companyId": {
-				S: aws.String(data.CompanyID),
-			},
-			"name": {
-				S: aws.String(data.Name),
-			},
-		},
-		ConditionExpression: aws.String("attribute_not_exists(#ID)"),
-		ExpressionAttributeNames: map[string]*string{
-			"#ID": aws.String("id"),
-		},
-	}
-	_, err = svc.PutItem(input)
-	if err != nil {
-		if aerr, ok := err.(awserr.Error); ok {
-			switch aerr.Code() {
-			case dynamodb.ErrCodeConditionalCheckFailedException:
-				return fmt.Errorf("validator ErrCodeConditionalCheckFailedException: %w", aerr)
-			case "ValidationException":
-				return fmt.Errorf("validator validation error: %w", aerr)
-			default:
-				fmt.Printf("validator unknown code err reason: %+v\n", input)
-				return fmt.Errorf("validator unknown code err: %w", aerr)
-			}
-		}
-	}
+  db, err := sql.Open(
+    "postgres",
+    fmt.Sprintf(
+      "host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
+      os.Getenv("DB_HOSTNAME"),
+      os.Getenv("DB_PORT"),
+      os.Getenv("DB_USERNAME"),
+      os.Getenv("DB_PASSWORD"),
+      os.Getenv("DB_DATABASE")))
+  if err != nil {
+    return fmt.Errorf("injectAgent db.open: %w", err)
+  }
+  defer func() {
+    err := db.Close()
+    if err != nil {
+      fmt.Printf("injectAgent db.close: %v", err)
+    }
+  }()
+  _, err = db.Exec(
+    "INSERT INTO agent (id, key, secret, company_id, name) VALUES ($1, $2, $3, $4, $5)",
+    data.ID,
+    data.Key,
+    data.Secret,
+    data.CompanyID,
+    data.Name)
+  if err != nil {
+    return fmt.Errorf("injectAgent db.exec: %w", err)
+  }
 
-	return nil
+  return nil
 }
 
 func deleteAgent(id string) error {
-	s, err := session.NewSession(&aws.Config{
-		Region:   aws.String(os.Getenv("DB_REGION")),
-		Endpoint: aws.String(os.Getenv("DB_ENDPOINT")),
-	})
-	if err != nil {
-		return err
-	}
-	svc := dynamodb.New(s)
-	_, err = svc.DeleteItem(&dynamodb.DeleteItemInput{
-		Key: map[string]*dynamodb.AttributeValue{
-			"id": {
-				S: aws.String(id),
-			},
-		},
-		TableName: aws.String(os.Getenv("DB_TABLE")),
-	})
-	if err != nil {
-		return err
-	}
+  db, err := sql.Open(
+    "postgres",
+    fmt.Sprintf(
+      "host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
+      os.Getenv("DB_HOSTNAME"),
+      os.Getenv("DB_PORT"),
+      os.Getenv("DB_USERNAME"),
+      os.Getenv("DB_PASSWORD"),
+      os.Getenv("DB_DATABASE")))
+  if err != nil {
+    return fmt.Errorf("deleteAgent db.open: %w", err)
+  }
+  defer func() {
+    err := db.Close()
+    if err != nil {
+      fmt.Printf("deleteAgent db.close: %v", err)
+    }
+  }()
+  _, err = db.Exec("DELETE FROM agent WHERE id = $1", id)
+  if err != nil {
+    return fmt.Errorf("deleteAgent db.exec: %w", err)
+  }
 
-	return nil
+  return nil
 }
 
 func TestAgentId(t *testing.T) {
@@ -122,6 +106,7 @@ func TestAgentId(t *testing.T) {
 				CompanyID: "b9e9153a-028c-4173-a7a8-e5063334416a",
 				Name:      "bugfixes test frontend",
 			},
+			err: fmt.Errorf("AgentId no rows"),
 		},
 	}
 
@@ -132,7 +117,6 @@ func TestAgentId(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-
 			resp, err := validator.AgentId(test.request.ID)
 			passed := assert.IsType(t, test.err, err)
 			if !passed {
@@ -301,6 +285,7 @@ func BenchmarkAgentId(b *testing.B) {
         CompanyID: "b9e9153a-028c-4173-a7a8-e5063334416a",
         Name:      "bugfixes test frontend",
       },
+      err: fmt.Errorf("AgentId no rows"),
     },
   }
 
