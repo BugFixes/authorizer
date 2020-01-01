@@ -31,7 +31,7 @@ function createStack()
 		    ParameterKey=DBHostname,ParameterValue=${DB_HOSTNAME} \
 		    ParameterKey=DBPort,ParameterValue=${DB_PORT} \
 		    ParameterKey=DBUsername,ParameterValue=${DB_USERNAME} \
-		    ParameterKey=DBPassword=ParameterValue=${DB_PASSWORD} \
+		    ParameterKey=DBPassword,ParameterValue=${DB_PASSWORD} \
 		    ParameterKey=DBTable,ParameterValue=agent \
 		    ParameterKey=DBDatabase,ParameterValue=bugfixes
 }
@@ -51,7 +51,7 @@ function updateStack()
 		    ParameterKey=DBHostname,ParameterValue=${DB_HOSTNAME} \
 		    ParameterKey=DBPort,ParameterValue=${DB_PORT} \
 		    ParameterKey=DBUsername,ParameterValue=${DB_USERNAME} \
-		    ParameterKey=DBPassword=ParameterValue=${DB_PASSWORD} \
+		    ParameterKey=DBPassword,ParameterValue=${DB_PASSWORD} \
 		    ParameterKey=DBTable,ParameterValue=agent \
 		    ParameterKey=DBDatabase,ParameterValue=bugfixes
 }
