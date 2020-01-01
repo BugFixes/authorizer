@@ -44,7 +44,7 @@ jobs:
           pip install wheel setuptools --upgrade
           pip install awscli-local --upgrade
       - name: create database
-        run: ./.ci/cloud.sh testDatabase
+        run: ./.ci/cloud/cloud.sh testDatabase
       - name: run tests
         run: ./.ci/cloud/cloud.sh testCode
 
