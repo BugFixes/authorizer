@@ -7,13 +7,13 @@ function build()
 {
     echo "build"
     GOOS=linux GOARCH=amd64 go build .
-    zip ${STACK_NAME}.zip ${STACK_NAME}
+    zip ${STACK_NAME}-${GITHUB_SHA}.zip ${STACK_NAME}
 }
 
 function moveFiles()
 {
     echo "moveFiles"
-    aws s3 cp ./${STACK_NAME}.zip s3://${BUILD_BUCKET}/${STACK_NAME}.zip
+    aws s3 cp ./${STACK_NAME}-${GITHUB_SHA}.zip s3://${BUILD_BUCKET}/${STACK_NAME}-${GITHUB_SHA}.zip
 }
 
 function createStack()
@@ -27,7 +27,7 @@ function createStack()
 		    ParameterKey=ServiceName,ParameterValue=${STACK_NAME} \
 		    ParameterKey=Environment,ParameterValue=live \
 		    ParameterKey=BuildBucket,ParameterValue=${BUILD_BUCKET} \
-		    ParameterKey=BuildKey,ParameterValue=${STACK_NAME}.zip \
+		    ParameterKey=BuildKey,ParameterValue=${STACK_NAME}-${GITHUB_SHA}.zip \
 		    ParameterKey=DBHostname,ParameterValue=${DB_HOSTNAME} \
 		    ParameterKey=DBPort,ParameterValue=${DB_PORT} \
 		    ParameterKey=DBUsername,ParameterValue=${DB_USERNAME} \
@@ -47,7 +47,7 @@ function updateStack()
 	      ParameterKey=ServiceName,ParameterValue=${STACK_NAME} \
 		    ParameterKey=Environment,ParameterValue=live \
 		    ParameterKey=BuildBucket,ParameterValue=${BUILD_BUCKET} \
-		    ParameterKey=BuildKey,ParameterValue=${STACK_NAME}.zip \
+		    ParameterKey=BuildKey,ParameterValue=${STACK_NAME}-${GITHUB_SHA}.zip \
 		    ParameterKey=DBHostname,ParameterValue=${DB_HOSTNAME} \
 		    ParameterKey=DBPort,ParameterValue=${DB_PORT} \
 		    ParameterKey=DBUsername,ParameterValue=${DB_USERNAME} \
