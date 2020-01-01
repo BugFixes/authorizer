@@ -46,7 +46,7 @@ jobs:
       - name: create database
         run: ./.ci/cloud.sh testDatabase
       - name: run tests
-        run: ./.ci/cloud.sh testCode
+        run: ./.ci/cloud/cloud.sh testCode
 
   push:
     needs: test
@@ -72,4 +72,4 @@ jobs:
           DB_PORT: 5432
           DB_USERNAME: ${{ secrets.DB_USERNAME }}
           DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
-        run: ./.ci/cloud.sh
+        run: ./.ci/cloud/cloud.sh
