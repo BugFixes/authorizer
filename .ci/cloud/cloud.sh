@@ -83,7 +83,7 @@ function testDatabase()
 function cloudFormation()
 {
   echo "cloudFormation"
-  STACK_EXISTS=$(aws cloudformation list-stacks --region eu-west-2 --stack-status-filter ROLLBACK_COMPLETE UPDATE_ROLLBACK_COMPLETE CREATE_COMPLETE | jq '.StackSummaries[].StackName//empty' | grep "${STACK_NAME}")
+  STACK_EXISTS=$(aws cloudformation list-stacks --region eu-west-2 --stack-status-filter ROLLBACK_COMPLETE UPDATE_ROLLBACK_COMPLETE CREATE_COMPLETE UPDATE_COMPLETE | jq '.StackSummaries[].StackName//empty' | grep "${STACK_NAME}")
   if [[ -z ${STACK_EXISTS} ]] || [[ "${STACK_EXISTS}" == "" ]]; then
     echo "No Stack"
     createStack
