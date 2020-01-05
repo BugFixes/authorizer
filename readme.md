@@ -1,6 +1,6 @@
-# BugFixes Authorizer 
+# BugFixes Authorizer
 
 The authorizer for bugfixes api gateway
 
 #### Build Status
-[![Build Status](https://travis-ci.org/bugfixes/authorizer.svg?branch=master)](https://travis-ci.org/bugfixes/authorizer)
+[![Actions Status](https://github.com/BugFixes/authorizer/workflows/Master/badge.svg)](https://github.com/bugfixes/authorizer/actions)
