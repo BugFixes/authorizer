@@ -1,4 +1,4 @@
-DROP TABLE "public"."agent";
+-- DROP TABLE "public"."agent";
 
 CREATE TABLE "public"."agent" (
                                   "id"         uuid,

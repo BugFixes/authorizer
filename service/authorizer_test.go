@@ -21,16 +21,10 @@ type AgentData struct {
 	Name      string
 }
 
+var connectDetails = ""
+
 func injectAgent(data AgentData) error {
-  db, err := sql.Open(
-    "postgres",
-    fmt.Sprintf(
-      "host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
-      os.Getenv("DB_HOSTNAME"),
-      os.Getenv("DB_PORT"),
-      os.Getenv("DB_USERNAME"),
-      os.Getenv("DB_PASSWORD"),
-      os.Getenv("DB_DATABASE")))
+  db, err := sql.Open("postgres", connectDetails)
   if err != nil {
     return fmt.Errorf("injectAgent db.open: %w", err)
   }
@@ -55,15 +49,7 @@ func injectAgent(data AgentData) error {
 }
 
 func deleteAgent(id string) error {
-  db, err := sql.Open(
-    "postgres",
-    fmt.Sprintf(
-      "host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
-    os.Getenv("DB_HOSTNAME"),
-    os.Getenv("DB_PORT"),
-    os.Getenv("DB_USERNAME"),
-    os.Getenv("DB_PASSWORD"),
-    os.Getenv("DB_DATABASE")))
+  db, err := sql.Open("postgres", connectDetails)
   if err != nil {
     return fmt.Errorf("deleteAgent db.open: %w", err)
   }
@@ -88,6 +74,13 @@ func TestHandler(t *testing.T) {
 			t.Errorf("godotenv err: %w", err)
 		}
 	}
+	connectDetails = fmt.Sprintf(
+    "host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
+    os.Getenv("DB_HOSTNAME"),
+    os.Getenv("DB_PORT"),
+    os.Getenv("DB_USERNAME"),
+    os.Getenv("DB_PASSWORD"),
+    os.Getenv("DB_DATABASE"))
 
 	tests := []struct {
 		name    string
@@ -277,6 +270,14 @@ func BenchmarkHandler(b *testing.B) {
       b.Errorf("godotenv err: %w", err)
     }
   }
+
+  connectDetails = fmt.Sprintf(
+    "host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
+    os.Getenv("DB_HOSTNAME"),
+    os.Getenv("DB_PORT"),
+    os.Getenv("DB_USERNAME"),
+    os.Getenv("DB_PASSWORD"),
+    os.Getenv("DB_DATABASE"))
 
   tests := []struct {
     name    string
