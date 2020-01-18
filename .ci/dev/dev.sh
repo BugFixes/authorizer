@@ -7,7 +7,7 @@ function createDatabase()
     -d \
     -p 5432:5432 \
     -e POSTGRES_PASSWORD=tester \
-    -e POSTGRES_USER=tester \
+    -e POSTGRES_USER=postgres \
     -e POSTGRES_DB=postgres \
     --name tester_postgres \
     postgres:11.5
@@ -18,7 +18,7 @@ function injectStructure()
   echo "injectStructure"
   docker exec \
     -e PGPASSWORD=tester tester_postgres psql \
-    -U tester \
+    -U postgres \
     -d postgres \
     -c "CREATE TABLE "public"."agent" ("id" uuid, "name" varchar(200), "key" uuid, "secret" uuid, "company_id" uuid, PRIMARY KEY ("id"));"
 }
@@ -27,7 +27,7 @@ function wipeDatabase()
 {
   echo "wipeDatabase"
   PGPASSWORD=tester psql \
-    -U tester \
+    -U postgres \
     -d postgres \
     --host 0.0.0.0 \
     --port 5432 \

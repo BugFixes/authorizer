@@ -59,7 +59,7 @@ function updateStack()
 function deleteStack()
 {
     echo "deleteStack"
-    awslocal cloudformation delete-stack --stack-name ${STACK_NAME}
+    aws cloudformation delete-stack --stack-name ${STACK_NAME}
 }
 
 function testCode()
