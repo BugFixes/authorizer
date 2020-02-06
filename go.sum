@@ -263,6 +263,8 @@ github.com/aws/aws-sdk-go v1.28.9 h1:grIuBQc+p3dTRXerh5+2OxSuWFi0iXuxbFdTSg0jaW0
 github.com/aws/aws-sdk-go v1.28.9/go.mod h1:KmX6BPdI08NWTb3/sm4ZGu5ShLoqVDhKgpiN924inxo=
 github.com/aws/aws-sdk-go v1.28.10 h1:uPaHYQWRXgI9ZrGrM6rkrHxkJOmI9orcvsTRhJXwX4I=
 github.com/aws/aws-sdk-go v1.28.10/go.mod h1:KmX6BPdI08NWTb3/sm4ZGu5ShLoqVDhKgpiN924inxo=
+github.com/aws/aws-sdk-go v1.28.11 h1:L2G5qI91s51cUP3hJli4mXRIZZ3alZHcwHWOJdMclKk=
+github.com/aws/aws-sdk-go v1.28.11/go.mod h1:KmX6BPdI08NWTb3/sm4ZGu5ShLoqVDhKgpiN924inxo=
 github.com/bugfixes/agent v0.0.0-20200103190208-81f656a325d8 h1:e0Q3BIEFu0vZFCslcTqZJgvQIu6mj0QlaOpJjHu5O1E=
 github.com/bugfixes/agent v0.0.0-20200103190208-81f656a325d8/go.mod h1:1tBZ9nrSTvNsHxXA3yrM4WkCbjBYWEB7KvRD7kMpD1E=
 github.com/bugfixes/agent v0.0.0-20200105125504-36c4e605d9f2 h1:Ji5wofLQt0lbTwHGBDIqLy1b8LABuQa7wK3QiR4EmiM=
