@@ -4,7 +4,7 @@ go 1.13
 
 require (
 	github.com/aws/aws-lambda-go v1.17.0
-	github.com/aws/aws-sdk-go v1.33.5
+	github.com/aws/aws-sdk-go v1.33.6
 	github.com/bugfixes/agent v0.0.0-20200105215800-069b3e557a2e
 	github.com/joho/godotenv v1.3.0
 	github.com/lib/pq v1.7.0
