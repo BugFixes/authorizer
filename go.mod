@@ -7,6 +7,6 @@ require (
 	github.com/aws/aws-sdk-go v1.37.24
 	github.com/bugfixes/agent v0.0.0-20200105215800-069b3e557a2e
 	github.com/joho/godotenv v1.3.0
-	github.com/lib/pq v1.9.0
+	github.com/lib/pq v1.10.0
 	github.com/stretchr/testify v1.7.0
 )
